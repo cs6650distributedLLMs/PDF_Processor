@@ -1,0 +1,32 @@
+{
+  "name": "hummingbird",
+  "version": "0.0.1",
+  "description": "REST API providing file upload and media management.",
+  "engines": {
+    "node": ">=22.13.0",
+    "npm": ">=10.9.2"
+  },
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:debug": "node --inspect-wait=127.0.0.1:9229 --trace-warnings --watch-path=./clients --watch-path=./controllers --watch-path=./core --watch-path=./routes server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wederribas/cs7990-master-thesis.git"
+  },
+  "keywords": [
+    "cs7990"
+  ],
+  "author": "Weder Ribas <me@wederribas.com>",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/wederribas/cs7990-master-thesis/issues"
+  },
+  "homepage": "https://github.com/wederribas/cs7990-master-thesis#readme",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
