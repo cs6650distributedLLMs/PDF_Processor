@@ -10,7 +10,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "start:debug": "node --inspect-wait=127.0.0.1:9229 --trace-warnings --watch-path=./clients --watch-path=./controllers --watch-path=./core --watch-path=./routes server.js",
+    "start:debug": "node --inspect-wait=127.0.0.1:9229 --trace-warnings --watch-path=./actions --watch-path=./clients --watch-path=./controllers --watch-path=./core --watch-path=./routes server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -27,6 +27,9 @@
   },
   "homepage": "https://github.com/wederribas/cs7990-master-thesis#readme",
   "dependencies": {
-    "express": "^4.21.2"
+    "@aws-sdk/client-s3": "^3.738.0",
+    "@aws-sdk/lib-storage": "^3.738.0",
+    "express": "^4.21.2",
+    "formidable": "^3.5.2"
   }
 }

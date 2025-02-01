@@ -6,11 +6,11 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
+app.get('/health', (req, res) => {
+  res.send({ status: 'ok' });
 });
 
-app.use('/media', mediaRoutes);
+app.use('/v1/media', mediaRoutes);
 
 const port = process.env.APP_PORT || 3000;
 

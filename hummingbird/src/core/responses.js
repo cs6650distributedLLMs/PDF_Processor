@@ -17,5 +17,5 @@ export const sendBadRequestResponse = (res, error) => {
 export const sendErrorResponse = (res, error) => {
   res
     .status(error.status || 500)
-    .data(error.message || 'Internal server error');
+    .send(error.message || 'Internal server error');
 };

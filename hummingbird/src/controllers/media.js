@@ -3,10 +3,13 @@ import {
   sendOkResponse,
   sendErrorResponse,
 } from '../core/responses.js';
+import { uploadMedia } from '../actions/uploadMedia.js';
 
-export const uploadController = (req, res) => {
+export const uploadController = async (req, res) => {
   try {
-    sendAcceptedResponse(res, { id: 'todo' });
+    const fileId = await uploadMedia(req);
+
+    sendAcceptedResponse(res, { fileId });
   } catch (error) {
     sendErrorResponse(res, error);
   }
