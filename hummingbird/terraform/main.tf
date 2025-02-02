@@ -10,7 +10,7 @@ terraform {
   backend "s3" {
     bucket         = "terraform-state-bucket"
     key            = "hummingbird/terraform.tfstate"
-    region         = "us-west-2"
+    region         = "ca-central-1"
     dynamodb_table = "terraform-state-lock-table"
     encrypt        = true
   }

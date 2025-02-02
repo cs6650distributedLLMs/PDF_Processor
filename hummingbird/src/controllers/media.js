@@ -11,12 +11,16 @@ import { uploadMedia } from '../actions/uploadMedia.js';
 import { convertBytesToMb } from '../core/utils.js';
 import { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS } from '../core/constants.js';
 import { getMediaUrl } from '../clients/s3.js';
+import { createMedia, getMedia } from '../clients/dynamodb.js';
 
 export const uploadController = async (req, res) => {
   try {
-    const fileId = await uploadMedia(req);
+    const { key, file } = await uploadMedia(req);
+    const { size, originalFilename: name, mimetype } = file;
 
-    sendAcceptedResponse(res, { fileId });
+    await createMedia({ key, size, name, mimetype });
+
+    sendAcceptedResponse(res, { fileId: key });
   } catch (error) {
     if (error.httpCode && error.code) {
       if (error.code === formidableErrors.biggerThanTotalMaxFileSize) {
@@ -54,7 +58,8 @@ export const uploadController = async (req, res) => {
       return;
     }
 
-    sendErrorResponse(res, error);
+    console.log(error);
+    sendErrorResponse(res);
   }
 };
 
@@ -73,11 +78,19 @@ export const downloadController = async (req, res) => {
   }
 };
 
-export const getController = (req, res) => {
+export const getController = async (req, res) => {
   try {
-    sendOkResponse(res, { id: 'todo' });
+    const key = req.params.id;
+    const media = await getMedia(key);
+
+    if (!media) {
+      sendNotFoundResponse(res);
+      return;
+    }
+
+    sendOkResponse(res, media);
   } catch (error) {
-    sendErrorResponse(res, error);
+    sendErrorResponse(res);
   }
 };
 
@@ -85,6 +98,6 @@ export const deleteController = (req, res) => {
   try {
     sendAcceptedResponse(res, { id: 'todo' });
   } catch (error) {
-    sendErrorResponse(res, error);
+    sendErrorResponse(res);
   }
 };

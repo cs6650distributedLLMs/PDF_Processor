@@ -78,7 +78,7 @@ export const uploadMedia = async (req) => {
             writeStream: this._writeStream,
           })
             .then((data) => {
-              form.emit('data', { name: 'done' });
+              form.emit('data', { name: 'done', file });
             })
             .catch((error) => {
               form.emit('error', error);
@@ -96,7 +96,7 @@ export const uploadMedia = async (req) => {
 
       form.on('data', (data) => {
         if (data.name === 'done') {
-          resolve(key);
+          resolve({ key, file: data.file.toJSON() });
         }
       });
     } catch (error) {
