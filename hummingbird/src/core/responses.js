@@ -14,6 +14,10 @@ export const sendBadRequestResponse = (res, error) => {
   res.status(400).send({ message: error?.message || 'Bad request' });
 };
 
+export const sendNotFoundResponse = (res) => {
+  res.status(404).send({ message: 'Not found' });
+};
+
 export const sendResponse = (res, status, message) => {
   res.status(status).send({ message });
 };

@@ -12,7 +12,7 @@ import { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS } from '../core/constants.js';
 export const uploadMedia = async (req) => {
   return new Promise((resolve, reject) => {
     try {
-      const uuid = randomUUID();
+      const key = randomUUID();
       const form = formidable({
         maxFiles: 1,
         minFileSize: 1,
@@ -73,8 +73,6 @@ export const uploadMedia = async (req) => {
             form.emit('error', error);
           });
 
-          const key = `${uuid}-${file.originalFilename}`;
-
           uploadMediaToS3({
             key,
             writeStream: this._writeStream,
@@ -98,7 +96,7 @@ export const uploadMedia = async (req) => {
 
       form.on('data', (data) => {
         if (data.name === 'done') {
-          resolve(uuid);
+          resolve(key);
         }
       });
     } catch (error) {

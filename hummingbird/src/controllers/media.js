@@ -5,10 +5,12 @@ import {
   sendErrorResponse,
   sendResponse,
   sendBadRequestResponse,
+  sendNotFoundResponse,
 } from '../core/responses.js';
 import { uploadMedia } from '../actions/uploadMedia.js';
 import { convertBytesToMb } from '../core/utils.js';
 import { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS } from '../core/constants.js';
+import { getMediaUrl } from '../clients/s3.js';
 
 export const uploadController = async (req, res) => {
   try {
@@ -56,9 +58,16 @@ export const uploadController = async (req, res) => {
   }
 };
 
-export const downloadController = (req, res) => {
+export const downloadController = async (req, res) => {
   try {
-    sendOkResponse(res, { id: 'todo' });
+    const url = await getMediaUrl(req.params.id);
+
+    if (!url) {
+      sendNotFoundResponse(res);
+      return;
+    }
+
+    res.redirect(302, url);
   } catch (error) {
     sendErrorResponse(res, error);
   }
