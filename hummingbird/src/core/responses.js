@@ -11,11 +11,15 @@ export const sendNoContentResponse = (res) => {
 };
 
 export const sendBadRequestResponse = (res, error) => {
-  res.status(400).send(error.message || 'Bad request');
+  res.status(400).send({ message: error?.message || 'Bad request' });
+};
+
+export const sendResponse = (res, status, message) => {
+  res.status(status).send({ message });
 };
 
 export const sendErrorResponse = (res, error) => {
   res
-    .status(error.status || 500)
-    .send(error.message || 'Internal server error');
+    .status(error?.status || 500)
+    .send(error?.message || 'Internal server error');
 };

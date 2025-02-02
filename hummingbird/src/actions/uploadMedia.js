@@ -1,7 +1,8 @@
-import formidable from 'formidable';
+import formidable, { errors as formidableErrors } from 'formidable';
 import { Transform } from 'node:stream';
 import { randomUUID } from 'node:crypto';
 import { uploadMediaToS3 } from '../clients/s3.js';
+import { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS } from '../core/constants.js';
 
 /**
  * Uploads a media file to AWS S3 in a streaming fashion.
@@ -12,21 +13,47 @@ export const uploadMedia = async (req) => {
   return new Promise((resolve, reject) => {
     try {
       const uuid = randomUUID();
-      const oneHundredMegabytes = 100 * 1024 * 1024;
       const form = formidable({
         maxFiles: 1,
-        maxFileSize: oneHundredMegabytes,
+        minFileSize: 1,
+        maxFileSize: MAX_FILE_SIZE,
         keepExtensions: true,
+        filter: ({ mimetype }) => {
+          const isImage = mimetype && mimetype.startsWith('image');
+          if (!isImage) {
+            const { code, httpCode } =
+              CUSTOM_FORMIDABLE_ERRORS.INVALID_FILE_TYPE;
+            const error = new formidableErrors.default(
+              'invalidFileType',
+              code,
+              httpCode
+            );
+            form.emit('error', error);
+            return false;
+          }
+
+          return true;
+        },
       });
 
       form.parse(req, (error, fields, files) => {
+        if (!Object.keys(files).length) {
+          const error = new formidableErrors.default(
+            'noFilesFound',
+            formidableErrors.malformedMultipart,
+            400
+          );
+          form.emit('error', error);
+          return;
+        }
+
         if (error) {
-          throw error;
+          reject(error);
         }
       });
 
       form.on('error', (error) => {
-        throw error;
+        reject(error);
       });
 
       form.on('fileBegin', (name, file) => {
