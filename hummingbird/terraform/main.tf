@@ -10,8 +10,17 @@ terraform {
   backend "s3" {
     bucket         = "terraform-state-bucket"
     key            = "hummingbird/terraform.tfstate"
-    region         = "ca-central-1"
+    region         = "ca-west-1"
     dynamodb_table = "terraform-state-lock-table"
     encrypt        = true
+  }
+}
+
+module "app" {
+  source = "./modules/app"
+  additional_tags = {
+    Scope = "mscs"
+    App   = "hummingbird"
+    Class = "CS7990"
   }
 }

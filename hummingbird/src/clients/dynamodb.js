@@ -30,7 +30,7 @@ export const createMedia = async ({ key, size, name, mimetype }) => {
   try {
     const client = new DynamoDBClient({
       endpoint: 'http://dynamodb.localhost.localstack.cloud:4566',
-      region: 'ca-central-1',
+      region: 'ca-west-1',
     });
 
     await client.send(command);
@@ -58,7 +58,7 @@ export const getMedia = async (key) => {
   try {
     const client = new DynamoDBClient({
       endpoint: 'http://dynamodb.localhost.localstack.cloud:4566',
-      region: 'ca-central-1',
+      region: 'ca-west-1',
     });
 
     const { Item } = await client.send(command);

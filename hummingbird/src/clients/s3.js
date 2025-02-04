@@ -14,7 +14,7 @@ export const uploadMediaToS3 = ({ key, writeStream }) => {
     const upload = new Upload({
       client: new S3Client({
         endpoint: 'http://s3.localhost.localstack.cloud:4566',
-        region: 'ca-central-1',
+        region: 'ca-west-1',
       }),
       params: {
         Bucket: 'media',
@@ -39,7 +39,7 @@ export const getMediaUrl = async (key) => {
   try {
     const client = new S3Client({
       endpoint: 'http://s3.localhost.localstack.cloud:4566',
-      region: 'ca-central-1',
+      region: 'ca-west-1',
     });
 
     const command = new GetObjectCommand({
