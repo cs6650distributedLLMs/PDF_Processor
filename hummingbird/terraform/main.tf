@@ -16,11 +16,21 @@ terraform {
   }
 }
 
-module "app" {
-  source = "./modules/app"
-  additional_tags = {
+locals {
+  common_tags = {
     Scope = "mscs"
     App   = "hummingbird"
     Class = "CS7990"
   }
+}
+
+module "ecr" {
+  source          = "./modules/ecr"
+  additional_tags = local.common_tags
+}
+
+module "app" {
+  depends_on      = [module.ecr]
+  source          = "./modules/app"
+  additional_tags = local.common_tags
 }

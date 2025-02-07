@@ -2,24 +2,6 @@ data "aws_region" "current" {
   name = "ca-west-1"
 }
 
-variable "min_ecs_containers" {
-  description = "Minimum number of ECS containers to run"
-  type        = number
-  default     = 2
-}
-
-variable "max_ecs_containers" {
-  description = "Maximum number of ECS containers to run"
-  type        = number
-  default     = 10
-}
-
-variable "additional_tags" {
-  description = "Additional tags to apply to resources"
-  type        = map(string)
-  default     = {}
-}
-
 resource "aws_dynamodb_table" "media-dynamo-table" {
   name         = "hummingbird-media"
   billing_mode = "PAY_PER_REQUEST"
