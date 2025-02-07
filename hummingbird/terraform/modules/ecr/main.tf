@@ -29,9 +29,11 @@ resource "aws_ecr_lifecycle_policy" "ecr_repository_lifecycle_policy" {
 EOF
 }
 
+resource "random_uuid" "image_tag" {}
+
 resource "null_resource" "build_docker_image" {
   provisioner "local-exec" {
-    command     = "docker build -t ${aws_ecr_repository.ecr_repository.repository_url}:latest ."
+    command     = "docker build -t ${aws_ecr_repository.ecr_repository.repository_url}:${random_uuid.image_tag.result} ."
     working_dir = var.docker_build_context
   }
 
@@ -40,7 +42,7 @@ resource "null_resource" "build_docker_image" {
 
 resource "null_resource" "push_docker_image" {
   provisioner "local-exec" {
-    command = "docker push ${aws_ecr_repository.ecr_repository.repository_url}:${var.image_tag}"
+    command = "docker push ${aws_ecr_repository.ecr_repository.repository_url}:${random_uuid.image_tag.result}"
   }
 
   depends_on = [null_resource.build_docker_image]

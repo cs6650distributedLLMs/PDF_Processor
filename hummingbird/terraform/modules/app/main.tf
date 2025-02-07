@@ -2,7 +2,11 @@ data "aws_region" "current" {
   name = "ca-west-1"
 }
 
-resource "aws_dynamodb_table" "media-dynamo-table" {
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+resource "aws_dynamodb_table" "media_dynamo_table" {
   name         = "hummingbird-media"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "PK"
@@ -29,10 +33,6 @@ resource "aws_vpc" "vpc" {
   tags = merge(var.additional_tags, {
     Name = "hummingbird-vpc"
   })
-}
-
-data "aws_availability_zones" "available" {
-  state = "available"
 }
 
 resource "aws_subnet" "public_subnet_one" {
@@ -211,6 +211,82 @@ resource "aws_vpc_endpoint" "dynamo_db_endpoint" {
   ]
 }
 
+resource "aws_cloudwatch_log_group" "cw_log_group" {
+  name              = "/ecs/hummingbird"
+  retention_in_days = 7
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-cloudwatch-log-group"
+  })
+}
+
+resource "aws_cloudwatch_log_stream" "cw_log_stream" {
+  name           = "hummingbird-log-stream"
+  log_group_name = aws_cloudwatch_log_group.cw_log_group.name
+}
+
+resource "aws_security_group" "alb_security_group" {
+  name        = "cb-load-balancer-security-group"
+  description = "controls access to the ALB"
+  vpc_id      = aws_vpc.vpc.id
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = var.app_port
+    to_port     = var.app_port
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_alb" "alb" {
+  name = "hummingbird-alb"
+  subnets = [
+    aws_subnet.public_subnet_one.id,
+    aws_subnet.public_subnet_two.id,
+  ]
+  security_groups = [
+    aws_security_group.alb_security_group.id
+  ]
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-alb"
+  })
+}
+
+resource "aws_alb_target_group" "alb_target_group" {
+  name        = "hummingbird-alb-target-group"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.vpc.id
+  target_type = "ip"
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-alb-target-group"
+  })
+}
+
+resource "aws_alb_listener" "alb_listener" {
+  load_balancer_arn = aws_alb.alb.id
+  port              = var.app_port
+  protocol          = "HTTP"
+
+  default_action {
+    target_group_arn = aws_alb_target_group.alb_target_group.id
+    type             = "forward"
+  }
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-alb-listener"
+  })
+}
+
 resource "aws_ecs_cluster" "ecs_cluster" {
   name = "hummingbird-ecs-cluster"
 
@@ -223,7 +299,183 @@ resource "aws_security_group" "container_security_group" {
   description = "Access to the Fargate containers"
   vpc_id      = aws_vpc.vpc.id
 
+  ingress {
+    protocol  = "tcp"
+    from_port = var.app_port
+    to_port   = var.app_port
+    security_groups = [
+      aws_security_group.alb_security_group.id
+    ]
+  }
+
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags = merge(var.additional_tags, {
     Name = "hummingbird-container-security-group"
+  })
+}
+
+resource "aws_iam_role" "ecs_task_execution_role" {
+  assume_role_policy = jsonencode({
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+  path = "/"
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-ecs-task-execution-role"
+  })
+}
+
+resource "aws_iam_role_policy" "ecs_role_policy" {
+  name = "ecs-service"
+  role = aws_iam_role.ecs_task_execution_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:AttachNetworkInterface",
+          "ec2:CreateNetworkInterface",
+          "ec2:CreateNetworkInterfacePermission",
+          "ec2:DeleteNetworkInterface",
+          "ec2:DeleteNetworkInterfacePermission",
+          "ec2:Describe*",
+          "ec2:DetachNetworkInterface",
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "ecs_task_execution_policy" {
+  name = "ecs-task-execution-policy"
+  role = aws_iam_role.ecs_task_execution_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "dynamodb_table_access" {
+  name = "dynamodb-table-access"
+  role = aws_iam_role.ecs_task_execution_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:BatchGet*",
+          "dynamodb:DescribeStream",
+          "dynamodb:DescribeTable",
+          "dynamodb:Get*",
+          "dynamodb:Query",
+          "dynamodb:Scan",
+          "dynamodb:BatchWrite*",
+          "dynamodb:CreateTable",
+          "dynamodb:Delete*",
+          "dynamodb:Update*",
+          "dynamodb:PutItem"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_ecs_task_definition" "ecs_task_definition" {
+  family                   = "hummingbird"
+  task_role_arn            = aws_iam_role.ecs_task_execution_role.arn
+  requires_compatibilities = ["FARGATE"]
+
+  container_definitions = <<TASK_DEFINITION
+  [
+    {
+      "name": "hummingbird",
+      "image": "${var.image_uri}",
+      "essential": true,
+      "environment": [
+        {"name": "HUMMINGBIRD_DYNAMO_TABLE", "value": "${aws_dynamodb_table.media_dynamo_table.name}"}
+      ],
+      "portMappings": [
+        {
+          "protocol": "tcp",
+          "containerPort": ${var.app_port}
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/hummingbird",
+          "awslogs-region": "${data.aws_region.current.name}",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+  TASK_DEFINITION
+  network_mode          = "awsvpc"
+  memory                = "512"
+  cpu                   = "256"
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-ecs-task-definition"
+  })
+}
+
+resource "aws_ecs_service" "ecs_service" {
+  name            = "hummingbird-ecs-service"
+  cluster         = aws_ecs_cluster.ecs_cluster.arn
+  task_definition = aws_ecs_task_definition.ecs_task_definition.arn
+  launch_type     = "FARGATE"
+  desired_count   = 2
+
+  load_balancer {
+    target_group_arn = aws_alb_target_group.alb_target_group.arn
+    container_name   = "hummingbird"
+    container_port   = var.app_port
+  }
+
+  network_configuration {
+    assign_public_ip = false
+    subnets = [
+      aws_subnet.private_subnet_one.id,
+      aws_subnet.private_subnet_two.id,
+    ]
+    security_groups = [
+      aws_security_group.container_security_group.id
+    ]
+  }
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-ecs-service"
   })
 }

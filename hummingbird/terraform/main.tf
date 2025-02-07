@@ -33,4 +33,5 @@ module "app" {
   depends_on      = [module.ecr]
   source          = "./modules/app"
   additional_tags = local.common_tags
+  image_uri       = module.ecr.image_uri
 }

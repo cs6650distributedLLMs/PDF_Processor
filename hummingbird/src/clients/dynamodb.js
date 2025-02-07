@@ -14,7 +14,7 @@ import {
  * @return {Promise<void>}
  */
 export const createMedia = async ({ key, size, name, mimetype }) => {
-  const TableName = 'media';
+  const TableName = 'hummingbird-media';
   const command = new PutItemCommand({
     TableName,
     Item: {
@@ -30,7 +30,7 @@ export const createMedia = async ({ key, size, name, mimetype }) => {
   try {
     const client = new DynamoDBClient({
       endpoint: 'http://dynamodb.localhost.localstack.cloud:4566',
-      region: 'ca-west-1',
+      region: 'ca-central-1',
     });
 
     await client.send(command);
@@ -46,7 +46,7 @@ export const createMedia = async ({ key, size, name, mimetype }) => {
  * @return {Promise<object>} The media object metadata.
  */
 export const getMedia = async (key) => {
-  const TableName = 'media';
+  const TableName = 'hummingbird-media';
   const command = new GetItemCommand({
     TableName,
     Key: {
@@ -58,7 +58,7 @@ export const getMedia = async (key) => {
   try {
     const client = new DynamoDBClient({
       endpoint: 'http://dynamodb.localhost.localstack.cloud:4566',
-      region: 'ca-west-1',
+      region: 'ca-central-1',
     });
 
     const { Item } = await client.send(command);

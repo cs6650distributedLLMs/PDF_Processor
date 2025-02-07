@@ -15,9 +15,3 @@ variable "docker_build_context" {
   type        = string
   default     = "../src"
 }
-
-variable "image_tag" {
-  description = "Tag to apply to the Docker image"
-  type        = string
-  default     = "latest"
-}
