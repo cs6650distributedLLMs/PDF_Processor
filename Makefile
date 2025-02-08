@@ -4,8 +4,8 @@ start:
 stop:
 	@docker compose down
 
-logs:
-	@docker compose logs --follow
+localstack-logs:
+	@docker logs --follow localstack
 
 deploy-tf-local:
 	@cd hummingbird/terraform-state && tflocal init && tflocal apply --auto-approve
