@@ -12,6 +12,9 @@ import { convertBytesToMb } from '../core/utils.js';
 import { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS } from '../core/constants.js';
 import { getMediaUrl } from '../clients/s3.js';
 import { createMedia, getMedia } from '../clients/dynamodb.js';
+import { getLogger } from '../logger.js';
+
+const logger = getLogger();
 
 export const uploadController = async (req, res) => {
   try {
@@ -58,23 +61,27 @@ export const uploadController = async (req, res) => {
       return;
     }
 
-    console.log(error);
+    logger.error(error);
     sendErrorResponse(res);
   }
 };
 
 export const downloadController = async (req, res) => {
   try {
-    const url = await getMediaUrl(req.params.id);
+    const key = req.params.id;
 
-    if (!url) {
+    const media = await getMedia(key);
+    if (!media) {
       sendNotFoundResponse(res);
       return;
     }
 
+    const url = await getMediaUrl(key);
+
     res.redirect(302, url);
   } catch (error) {
-    sendErrorResponse(res, error);
+    logger.error(error);
+    sendErrorResponse(res);
   }
 };
 
@@ -90,14 +97,24 @@ export const getController = async (req, res) => {
 
     sendOkResponse(res, media);
   } catch (error) {
+    logger.error(error);
     sendErrorResponse(res);
   }
 };
 
-export const deleteController = (req, res) => {
+export const deleteController = async (req, res) => {
   try {
+    const key = req.params.id;
+
+    const media = await getMedia(key);
+    if (!media) {
+      sendNotFoundResponse(res);
+      return;
+    }
+
     sendAcceptedResponse(res, { id: 'todo' });
   } catch (error) {
+    logger.error(error);
     sendErrorResponse(res);
   }
 };
