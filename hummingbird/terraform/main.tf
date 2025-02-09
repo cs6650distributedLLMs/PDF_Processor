@@ -10,7 +10,7 @@ terraform {
   backend "s3" {
     bucket         = "terraform-state-bucket"
     key            = "hummingbird/terraform.tfstate"
-    region         = "ca-west-1"
+    region         = "ca-central-1"
     dynamodb_table = "terraform-state-lock-table"
     encrypt        = true
   }
@@ -24,6 +24,11 @@ locals {
   }
 }
 
+module "media_bucket" {
+  source          = "./modules/media-bucket"
+  additional_tags = local.common_tags
+}
+
 module "ecr" {
   source          = "./modules/ecr"
   additional_tags = local.common_tags
@@ -34,4 +39,10 @@ module "app" {
   source          = "./modules/app"
   additional_tags = local.common_tags
   image_uri       = module.ecr.image_uri
+}
+
+module "eventing" {
+  depends_on      = [module.ecr]
+  source          = "./modules/eventing"
+  additional_tags = local.common_tags
 }
