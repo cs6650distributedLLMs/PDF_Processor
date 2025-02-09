@@ -195,7 +195,6 @@ resource "aws_vpc_endpoint" "dynamo_db_endpoint" {
   vpc_id       = aws_vpc.vpc.id
   service_name = "com.amazonaws.${data.aws_region.current.name}.dynamodb"
   policy = jsonencode({
-    Version = "2012-10-17"
     Statement = [
       {
         Effect    = "Allow"

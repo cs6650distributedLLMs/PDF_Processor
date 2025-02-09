@@ -26,7 +26,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/health', (req, res) => {
-  res.send({ status: 'ok' });
+  res.send({ status: 'ok', service: 'hummingbird' });
 });
 
 app.use('/v1/media', mediaRoutes);

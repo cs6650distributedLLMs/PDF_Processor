@@ -13,15 +13,18 @@ clean-terraform-state:
 	@rm -rf hummingbird/terraform/.terraform hummingbird/terraform/.terraform.lock.hcl
 
 deploy-tf-local:
-	@cd hummingbird/terraform-state && tflocal init && tflocal apply --auto-approve
-	@cd hummingbird/terraform && tflocal init && tflocal apply --auto-approve
+	@cd hummingbird/terraform-state && tflocal init && tflocal apply -auto-approve
+	@cd hummingbird/terraform && tflocal init && tflocal apply -auto-approve
 
 plan-tf-local:
-	@cd hummingbird/terraform-state && tflocal init && tflocal apply --auto-approve
+	@cd hummingbird/terraform-state && tflocal init && tflocal apply -auto-approve
 	@cd hummingbird/terraform && tflocal init && tflocal plan
 
 run-all:
 	@make start
 	@make deploy-tf-local
 
-.PHONY: start stop logs deploy-tf-local plan-tf-local run-all clean-terraform-state localstack-logs
+redeploy-image:
+	@cd hummingbird/terraform && tflocal apply -target=module.ecr -auto-approve
+
+.PHONY: start stop localstack-logs clean-terraform-state deploy-tf-local plan-tf-local run-all redeploy-image
