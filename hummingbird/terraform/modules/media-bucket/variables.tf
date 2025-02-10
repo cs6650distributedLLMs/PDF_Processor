@@ -1,7 +1,7 @@
 variable "media_s3_bucket" {
   description = "S3 bucket for media files"
   type        = string
-  default     = "media"
+  default     = "hummingbird-app-media-bucket"
 }
 
 variable "additional_tags" {

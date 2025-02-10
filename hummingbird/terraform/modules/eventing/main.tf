@@ -33,16 +33,14 @@ resource "aws_sns_topic" "media_management_topic" {
 }
 
 data "aws_iam_policy_document" "sns_topic_policy" {
-  policy_id = "__default_policy_ID"
-
   statement {
+    sid     = "SNSPublishToSQS"
     actions = ["sqs:SendMessage"]
-
-    effect = "Allow"
+    effect  = "Allow"
 
     principals {
-      type        = "Service"
-      identifiers = ["sns.amazonaws.com"]
+      type        = "AWS"
+      identifiers = ["*"]
     }
 
     resources = [
@@ -54,14 +52,12 @@ data "aws_iam_policy_document" "sns_topic_policy" {
       variable = "aws:SourceArn"
       values   = [aws_sns_topic.media_management_topic.arn]
     }
-
-    sid = "__default_statement_ID"
   }
 }
 
-resource "aws_sns_topic_policy" "sqs_sns_topic_policy" {
-  arn    = aws_sns_topic.media_management_topic.arn
-  policy = data.aws_iam_policy_document.sns_topic_policy.json
+resource "aws_sqs_queue_policy" "sqs_sns_topic_policy" {
+  queue_url = aws_sqs_queue.media_management_sqs_queue.url
+  policy    = data.aws_iam_policy_document.sns_topic_policy.json
 }
 
 resource "aws_sns_topic_subscription" "sqs_sns_subscription" {

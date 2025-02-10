@@ -1,9 +1,3 @@
-variable "account_id" {
-  description = "AWS account ID"
-  type        = string
-  default     = "000000000000"
-}
-
 variable "media_mngmt_topic_name" {
   description = "Name of the SNS topic"
   type        = string

@@ -1,30 +1,5 @@
 data "aws_region" "current" {
-  name = "ca-central-1"
-}
-
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
-resource "aws_dynamodb_table" "media_dynamo_table" {
-  name         = "hummingbird-media"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "PK"
-  range_key    = "SK"
-
-  attribute {
-    name = "PK"
-    type = "S"
-  }
-
-  attribute {
-    name = "SK"
-    type = "S"
-  }
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-media-dynamo-table"
-  })
+  name = "us-west-2"
 }
 
 resource "aws_vpc" "vpc" {
@@ -38,7 +13,7 @@ resource "aws_vpc" "vpc" {
 resource "aws_subnet" "public_subnet_one" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = "10.0.0.0/26"
-  availability_zone       = element(data.aws_availability_zones.available.names, 0)
+  availability_zone       = "us-west-2a"
   map_public_ip_on_launch = true
 
   tags = merge(var.additional_tags, {
@@ -49,7 +24,7 @@ resource "aws_subnet" "public_subnet_one" {
 resource "aws_subnet" "public_subnet_two" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = "10.0.0.64/26"
-  availability_zone       = element(data.aws_availability_zones.available.names, 1)
+  availability_zone       = "us-west-2b"
   map_public_ip_on_launch = true
 
   tags = merge(var.additional_tags, {
@@ -60,7 +35,7 @@ resource "aws_subnet" "public_subnet_two" {
 resource "aws_subnet" "private_subnet_one" {
   vpc_id            = aws_vpc.vpc.id
   cidr_block        = "10.0.0.128/26"
-  availability_zone = element(data.aws_availability_zones.available.names, 0)
+  availability_zone = "us-west-2a"
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-private-subnet-one"
@@ -70,7 +45,7 @@ resource "aws_subnet" "private_subnet_one" {
 resource "aws_subnet" "private_subnet_two" {
   vpc_id            = aws_vpc.vpc.id
   cidr_block        = "10.0.0.192/26"
-  availability_zone = element(data.aws_availability_zones.available.names, 1)
+  availability_zone = "us-west-2b"
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-private-subnet-two"
@@ -194,54 +169,58 @@ resource "aws_route_table_association" "private_route_table_two_association" {
 resource "aws_vpc_endpoint" "dynamo_db_endpoint" {
   vpc_id       = aws_vpc.vpc.id
   service_name = "com.amazonaws.${data.aws_region.current.name}.dynamodb"
-  policy = jsonencode({
-    Statement = [
-      {
-        Effect    = "Allow"
-        Action    = "*"
-        Principal = "*"
-        Resource  = "*"
-      }
-    ]
-  })
   route_table_ids = [
     aws_route_table.private_route_table_one.id,
     aws_route_table.private_route_table_two.id,
   ]
-}
-
-resource "aws_cloudwatch_log_group" "cw_log_group" {
-  name              = "/ecs/hummingbird"
-  retention_in_days = 7
 
   tags = merge(var.additional_tags, {
-    Name = "hummingbird-cloudwatch-log-group"
+    Name = "hummingbird-dynamodb-endpoint"
   })
 }
 
-resource "aws_cloudwatch_log_stream" "cw_log_stream" {
-  name           = "hummingbird-log-stream"
-  log_group_name = aws_cloudwatch_log_group.cw_log_group.name
+data "aws_iam_policy_document" "dynamo_db_endpoint_policy" {
+  statement {
+    sid       = "DynamoDBEndpointPolicy"
+    effect    = "Allow"
+    actions   = ["dynamodb:*"]
+    resources = ["*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+  }
+}
+
+resource "aws_vpc_endpoint_policy" "dynamo_db_endpoint_policy" {
+  vpc_endpoint_id = aws_vpc_endpoint.dynamo_db_endpoint.id
+  policy          = data.aws_iam_policy_document.dynamo_db_endpoint_policy.json
 }
 
 resource "aws_security_group" "alb_security_group" {
-  name        = "cb-load-balancer-security-group"
+  name        = "hummingbird-alb-security-group"
   description = "controls access to the ALB"
   vpc_id      = aws_vpc.vpc.id
 
   ingress {
+    description = "Allow HTTP traffic from the internet"
     protocol    = "tcp"
-    from_port   = var.app_port
-    to_port     = var.app_port
+    from_port   = 80
+    to_port     = 80
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
+    description = "Allow all outbound traffic"
     protocol    = "-1"
     from_port   = 0
     to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-alb-security-group"
+  })
 }
 
 resource "aws_alb" "alb" {
@@ -261,10 +240,22 @@ resource "aws_alb" "alb" {
 
 resource "aws_alb_target_group" "alb_target_group" {
   name        = "hummingbird-alb-target-group"
-  port        = 80
+  port        = var.app_port
   protocol    = "HTTP"
   vpc_id      = aws_vpc.vpc.id
   target_type = "ip"
+
+  health_check {
+    protocol = "HTTP"
+    port     = var.app_port
+    path     = "/health"
+
+    interval            = 10
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-alb-target-group"
@@ -272,14 +263,16 @@ resource "aws_alb_target_group" "alb_target_group" {
 }
 
 resource "aws_alb_listener" "alb_listener" {
-  load_balancer_arn = aws_alb.alb.id
-  port              = var.app_port
+  load_balancer_arn = aws_alb.alb.arn
+  port              = 80
   protocol          = "HTTP"
 
   default_action {
-    target_group_arn = aws_alb_target_group.alb_target_group.id
+    target_group_arn = aws_alb_target_group.alb_target_group.arn
     type             = "forward"
   }
+
+  depends_on = [aws_alb_target_group.alb_target_group]
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-alb-listener"
@@ -319,100 +312,111 @@ resource "aws_security_group" "container_security_group" {
   })
 }
 
-resource "aws_iam_role" "ecs_task_execution_role" {
-  assume_role_policy = jsonencode({
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
+data "aws_iam_policy_document" "ecs_assume_role_policy" {
+  statement {
+    sid     = "ECSAssumeRolePolicy"
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ecs_task_role" {
+  name               = "hummingbird-ecs-task-role"
+  assume_role_policy = data.aws_iam_policy_document.ecs_assume_role_policy.json
+  path               = "/"
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-ecs-task-role"
   })
-  path = "/"
+}
+
+data "aws_iam_policy_document" "ecs_iam_role_policy" {
+  statement {
+    sid    = "EC2Networking"
+    effect = "Allow"
+    actions = [
+      "ec2:AttachNetworkInterface",
+      "ec2:CreateNetworkInterface",
+      "ec2:CreateNetworkInterfacePermission",
+      "ec2:DeleteNetworkInterface",
+      "ec2:DeleteNetworkInterfacePermission",
+      "ec2:Describe*",
+      "ec2:DetachNetworkInterface"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "ECR"
+    effect = "Allow"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:GetAuthorizationToken",
+      "ecr:GetDownloadUrlForLayer"
+    ]
+    resources = [var.ecr_repository_arn]
+  }
+
+  statement {
+    sid    = "S3"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      var.media_bucket_arn,
+      "${var.media_bucket_arn}/*"
+    ]
+  }
+
+  statement {
+    sid    = "DynamoDB"
+    effect = "Allow"
+    actions = [
+      "dynamodb:BatchGetItem",
+      "dynamodb:BatchWriteItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:Query",
+      "dynamodb:Scan",
+      "dynamodb:UpdateItem"
+    ]
+    resources = [var.dynamodb_table_arn]
+  }
+}
+
+resource "aws_iam_role_policy" "ecs_role_policy" {
+  name   = "hummingbird-ecs-tasks-iam-role-policy"
+  role   = aws_iam_role.ecs_task_role.id
+  policy = data.aws_iam_policy_document.ecs_iam_role_policy.json
+}
+
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name               = "hummingbird-ecs-task-execution-role"
+  assume_role_policy = data.aws_iam_policy_document.ecs_assume_role_policy.json
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-ecs-task-execution-role"
   })
 }
 
-resource "aws_iam_role_policy" "ecs_role_policy" {
-  name = "ecs-service"
-  role = aws_iam_role.ecs_task_execution_role.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "ec2:AttachNetworkInterface",
-          "ec2:CreateNetworkInterface",
-          "ec2:CreateNetworkInterfacePermission",
-          "ec2:DeleteNetworkInterface",
-          "ec2:DeleteNetworkInterfacePermission",
-          "ec2:Describe*",
-          "ec2:DetachNetworkInterface",
-        ]
-        Resource = "*"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "ecs_task_execution_policy" {
-  name = "ecs-task-execution-policy"
-  role = aws_iam_role.ecs_task_execution_role.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "ecr:GetAuthorizationToken",
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "dynamodb_table_access" {
-  name = "dynamodb-table-access"
-  role = aws_iam_role.ecs_task_execution_role.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "dynamodb:BatchGet*",
-          "dynamodb:DescribeStream",
-          "dynamodb:DescribeTable",
-          "dynamodb:Get*",
-          "dynamodb:Query",
-          "dynamodb:Scan",
-          "dynamodb:BatchWrite*",
-          "dynamodb:CreateTable",
-          "dynamodb:Delete*",
-          "dynamodb:Update*",
-          "dynamodb:PutItem"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy_attachment" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
 resource "aws_ecs_task_definition" "ecs_task_definition" {
   family                   = "hummingbird"
-  task_role_arn            = aws_iam_role.ecs_task_execution_role.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
   requires_compatibilities = ["FARGATE"]
 
   container_definitions = <<TASK_DEFINITION
@@ -422,7 +426,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "image": "${var.image_uri}",
       "essential": true,
       "environment": [
-        {"name": "HUMMINGBIRD_DYNAMO_TABLE", "value": "${aws_dynamodb_table.media_dynamo_table.name}"}
+        {"name": "HUMMINGBIRD_DYNAMO_TABLE", "value": "${var.dynamodb_table_name}"},
+        {"name": "NODE_ENV", "value": "${var.node_env}"}
       ],
       "portMappings": [
         {
@@ -473,6 +478,14 @@ resource "aws_ecs_service" "ecs_service" {
       aws_security_group.container_security_group.id
     ]
   }
+
+  depends_on = [
+    aws_ecs_cluster.ecs_cluster,
+    aws_ecs_task_definition.ecs_task_definition,
+    aws_subnet.private_subnet_one,
+    aws_subnet.private_subnet_two,
+    aws_alb_target_group.alb_target_group
+  ]
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-ecs-service"

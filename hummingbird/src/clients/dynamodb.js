@@ -3,6 +3,11 @@ import {
   GetItemCommand,
   PutItemCommand,
 } from '@aws-sdk/client-dynamodb';
+import { isLocalEnv } from '../core/utils.js';
+
+const endpoint = isLocalEnv()
+  ? 'http://dynamodb.localhost.localstack.cloud:4566'
+  : undefined;
 
 /**
  * Stores metadata about a media object in DynamoDB.
@@ -14,7 +19,7 @@ import {
  * @return {Promise<void>}
  */
 export const createMedia = async ({ key, size, name, mimetype }) => {
-  const TableName = 'hummingbird-media';
+  const TableName = 'hummingbird-app-table';
   const command = new PutItemCommand({
     TableName,
     Item: {
@@ -29,8 +34,8 @@ export const createMedia = async ({ key, size, name, mimetype }) => {
 
   try {
     const client = new DynamoDBClient({
-      endpoint: 'http://dynamodb.localhost.localstack.cloud:4566',
-      region: 'ca-central-1',
+      endpoint,
+      region: 'us-west-2',
     });
 
     await client.send(command);
@@ -46,7 +51,7 @@ export const createMedia = async ({ key, size, name, mimetype }) => {
  * @return {Promise<object>} The media object metadata.
  */
 export const getMedia = async (key) => {
-  const TableName = 'hummingbird-media';
+  const TableName = 'hummingbird-app-table';
   const command = new GetItemCommand({
     TableName,
     Key: {
@@ -57,8 +62,8 @@ export const getMedia = async (key) => {
 
   try {
     const client = new DynamoDBClient({
-      endpoint: 'http://dynamodb.localhost.localstack.cloud:4566',
-      region: 'ca-central-1',
+      endpoint,
+      region: 'us-west-2',
     });
 
     const { Item } = await client.send(command);

@@ -8,10 +8,10 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "terraform-state-bucket"
+    bucket         = "hummingbird-terraform-state-bucket"
     key            = "hummingbird/terraform.tfstate"
-    region         = "ca-central-1"
-    dynamodb_table = "terraform-state-lock-table"
+    region         = "us-west-2"
+    dynamodb_table = "hummingbird-terraform-state-lock-table"
     encrypt        = true
   }
 }
@@ -34,15 +34,37 @@ module "ecr" {
   additional_tags = local.common_tags
 }
 
-module "app" {
-  depends_on      = [module.ecr]
-  source          = "./modules/app"
+module "cloudwatch" {
+  source          = "./modules/cloudwatch"
   additional_tags = local.common_tags
-  image_uri       = module.ecr.image_uri
+}
+
+module "dynamodb" {
+  source          = "./modules/dynamodb"
+  additional_tags = local.common_tags
+}
+
+module "app" {
+  depends_on = [
+    module.media_bucket,
+    module.ecr,
+    module.cloudwatch,
+    module.dynamodb
+  ]
+
+  source              = "./modules/app"
+  additional_tags     = local.common_tags
+  dynamodb_table_arn  = module.dynamodb.dynamodb_table_arn
+  dynamodb_table_name = module.dynamodb.dynamodb_table_name
+  ecr_repository_arn  = module.ecr.ecr_repository_arn
+  image_uri           = module.ecr.image_uri
+  media_bucket_arn    = module.media_bucket.media_bucket_arn
+  node_env            = var.node_env
 }
 
 module "eventing" {
-  depends_on      = [module.ecr]
+  depends_on = [module.ecr]
+
   source          = "./modules/eventing"
   additional_tags = local.common_tags
 }

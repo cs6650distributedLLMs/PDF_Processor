@@ -3,11 +3,11 @@
 set -x
 
 echo "Creating media S3 bucket"
-awslocal s3 mb s3://media --region ca-central-1
+awslocal s3 mb s3://media --region us-west-2
 
 echo "Creating media DynamoDB table"
 awslocal dynamodb create-table \
-  --region ca-central-1 \
+  --region us-west-2 \
   --table-name media \
   --attribute-definitions \
     AttributeName=PK,AttributeType=S \

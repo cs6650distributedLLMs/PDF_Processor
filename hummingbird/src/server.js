@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import mediaRoutes from './routes/media.js';
 import { init as initializeLogger, getLogger } from './logger.js';
@@ -26,7 +27,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/health', (req, res) => {
-  res.send({ status: 'ok', service: 'hummingbird' });
+  res.send({ status: 'ok', service: 'hummingbird', timestamp: Date.now() });
 });
 
 app.use('/v1/media', mediaRoutes);

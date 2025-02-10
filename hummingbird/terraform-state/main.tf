@@ -8,12 +8,20 @@ terraform {
   }
 }
 
-resource "aws_s3_bucket" "terraform_remote_state_bucket" {
-  bucket = "terraform-state-bucket"
-
-  lifecycle {
-    prevent_destroy = true
+locals {
+  common_tags = {
+    Scope = "mscs"
+    App   = "hummingbird"
+    Class = "CS7990"
   }
+}
+
+resource "aws_s3_bucket" "terraform_remote_state_bucket" {
+  bucket = "hummingbird-terraform-state-bucket"
+
+  tags = merge(local.common_tags, {
+    Name = "hummingbird-terraform-state-bucket"
+  })
 }
 
 resource "aws_s3_bucket_versioning" "terraform_remote_state_bucket_versioning" {
@@ -25,7 +33,7 @@ resource "aws_s3_bucket_versioning" "terraform_remote_state_bucket_versioning" {
 }
 
 resource "aws_dynamodb_table" "terraform_remote_state_lock_table" {
-  name           = "terraform-state-lock-table"
+  name           = "hummingbird-terraform-state-lock-table"
   read_capacity  = 1
   write_capacity = 1
   hash_key       = "LockID"
@@ -33,4 +41,10 @@ resource "aws_dynamodb_table" "terraform_remote_state_lock_table" {
     name = "LockID"
     type = "S"
   }
+
+  depends_on = [aws_s3_bucket.terraform_remote_state_bucket]
+
+  tags = merge(local.common_tags, {
+    Name = "hummingbird-terraform-state-lock-table"
+  })
 }

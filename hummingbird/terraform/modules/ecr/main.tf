@@ -1,6 +1,9 @@
+data "aws_region" "current" {
+  name = "us-west-2"
+}
+
 resource "aws_ecr_repository" "ecr_repository" {
-  name                 = var.ecr_repository_name
-  image_tag_mutability = "IMMUTABLE"
+  name = var.ecr_repository_name
 
   tags = merge(var.additional_tags, {
     Name = var.ecr_repository_name
@@ -11,7 +14,6 @@ resource "aws_ecr_lifecycle_policy" "ecr_repository_lifecycle_policy" {
   repository = aws_ecr_repository.ecr_repository.name
   policy     = <<EOF
 {
-    "version": "2012-10-17",
     "rules": [
         {
             "rulePriority": 1,
@@ -28,6 +30,42 @@ resource "aws_ecr_lifecycle_policy" "ecr_repository_lifecycle_policy" {
     ]
 }
 EOF
+}
+
+data "aws_caller_identity" "current" {}
+
+data "aws_iam_policy_document" "ecr_repository_policy_document" {
+  statement {
+    sid    = "AllowECRRepositoryAccess"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = [data.aws_caller_identity.current.account_id]
+    }
+
+    actions = [
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:BatchGetImage",
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:PutImage",
+      "ecr:InitiateLayerUpload",
+      "ecr:UploadLayerPart",
+      "ecr:CompleteLayerUpload",
+      "ecr:DescribeRepositories",
+      "ecr:GetRepositoryPolicy",
+      "ecr:ListImages",
+      "ecr:DeleteRepository",
+      "ecr:BatchDeleteImage",
+      "ecr:SetRepositoryPolicy",
+      "ecr:DeleteRepositoryPolicy",
+    ]
+  }
+}
+
+resource "aws_ecr_repository_policy" "ecr_repository_policy" {
+  repository = aws_ecr_repository.ecr_repository.name
+  policy     = data.aws_iam_policy_document.ecr_repository_policy_document.json
 }
 
 locals {
@@ -52,12 +90,20 @@ resource "random_uuid" "image_tag" {
 
 resource "null_resource" "build_docker_image" {
   provisioner "local-exec" {
-    command     = "docker build -t ${aws_ecr_repository.ecr_repository.repository_url}:${random_uuid.image_tag.result} ."
+    command     = "docker build --platform linux/amd64 --tag ${aws_ecr_repository.ecr_repository.repository_url}:${random_uuid.image_tag.result} ."
     working_dir = var.docker_build_context
   }
 
   triggers = {
     should_trigger_resource = local.source_directory_hash
+  }
+
+  depends_on = [aws_ecr_repository.ecr_repository]
+}
+
+resource "null_resource" "login_to_ecr" {
+  provisioner "local-exec" {
+    command = "aws ecr get-login-password --region ${data.aws_region.current.name} | docker login --username AWS --password-stdin ${aws_ecr_repository.ecr_repository.repository_url}"
   }
 
   depends_on = [aws_ecr_repository.ecr_repository]
@@ -72,5 +118,9 @@ resource "null_resource" "push_docker_image" {
     should_trigger_resource = local.source_directory_hash
   }
 
-  depends_on = [null_resource.build_docker_image]
+  depends_on = [
+    aws_ecr_repository.ecr_repository,
+    aws_ecr_repository_policy.ecr_repository_policy,
+    null_resource.build_docker_image
+  ]
 }

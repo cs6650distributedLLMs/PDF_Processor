@@ -1,6 +1,11 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { isLocalEnv } from '../core/utils.js';
+
+const endpoint = isLocalEnv()
+  ? 'http://s3.localhost.localstack.cloud:4566'
+  : undefined;
 
 /**
  * Uploads a media file to S3.
@@ -13,11 +18,11 @@ export const uploadMediaToS3 = ({ key, writeStream }) => {
   try {
     const upload = new Upload({
       client: new S3Client({
-        endpoint: 'http://s3.localhost.localstack.cloud:4566',
-        region: 'ca-central-1',
+        endpoint,
+        region: 'us-west-2',
       }),
       params: {
-        Bucket: 'media',
+        Bucket: 'hummingbird-app-media-bucket',
         Key: key,
         Body: writeStream,
       },
@@ -38,12 +43,12 @@ export const uploadMediaToS3 = ({ key, writeStream }) => {
 export const getMediaUrl = async (key) => {
   try {
     const client = new S3Client({
-      endpoint: 'http://s3.localhost.localstack.cloud:4566',
-      region: 'ca-central-1',
+      endpoint,
+      region: 'us-west-2',
     });
 
     const command = new GetObjectCommand({
-      Bucket: 'media',
+      Bucket: 'hummingbird-app-media-bucket',
       Key: key,
     });
 

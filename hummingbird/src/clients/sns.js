@@ -11,7 +11,7 @@ export const publishEvent = async ({ topicArn, message }) => {
   try {
     const client = new SNSClient({
       endpoint: 'http://sns.localhost.localstack.cloud:4566',
-      region: 'ca-central-1',
+      region: 'us-west-2',
     });
 
     const command = new PublishCommand({
