@@ -13,6 +13,7 @@ import { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS } from '../core/constants.js';
 import { getMediaUrl } from '../clients/s3.js';
 import { createMedia, getMedia } from '../clients/dynamodb.js';
 import { getLogger } from '../logger.js';
+import { publishDeleteMediaEvent } from '../clients/sns.js';
 
 const logger = getLogger();
 
@@ -112,7 +113,9 @@ export const deleteController = async (req, res) => {
       return;
     }
 
-    sendAcceptedResponse(res, { id: 'todo' });
+    await publishDeleteMediaEvent(key);
+
+    sendAcceptedResponse(res, { keyToDelete: key });
   } catch (error) {
     logger.error(error);
     sendErrorResponse(res);

@@ -50,3 +50,8 @@ variable "node_env" {
   description = "Node.js environment"
   type        = string
 }
+
+variable "media_s3_bucket_name" {
+  description = "S3 bucket for media files"
+  type        = string
+}

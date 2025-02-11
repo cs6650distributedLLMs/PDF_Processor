@@ -10,7 +10,6 @@ terraform {
   backend "s3" {
     bucket         = "hummingbird-terraform-state-bucket"
     key            = "hummingbird/terraform.tfstate"
-    region         = var.aws_region
     dynamodb_table = "hummingbird-terraform-state-lock-table"
     encrypt        = true
   }
@@ -25,8 +24,9 @@ locals {
 }
 
 module "media_bucket" {
-  source          = "./modules/media-bucket"
-  additional_tags = local.common_tags
+  source               = "./modules/media-bucket"
+  additional_tags      = local.common_tags
+  media_s3_bucket_name = var.media_s3_bucket_name
 }
 
 module "ecr" {
@@ -67,6 +67,7 @@ module "app" {
   dynamodb_table_name        = module.dynamodb.dynamodb_table_name
   ecr_repository_arn         = module.ecr.ecr_repository_arn
   image_uri                  = module.ecr.image_uri
+  media_s3_bucket_name       = var.media_s3_bucket_name
   media_bucket_arn           = module.media_bucket.media_bucket_arn
   media_management_topic_arn = module.eventing.media_management_topic_arn
   node_env                   = var.node_env

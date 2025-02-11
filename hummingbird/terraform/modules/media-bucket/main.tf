@@ -1,8 +1,8 @@
 resource "aws_s3_bucket" "media_bucket" {
-  bucket = var.media_s3_bucket
+  bucket = var.media_s3_bucket_name
 
   tags = merge(var.additional_tags, {
-    Name = var.media_s3_bucket
+    Name = var.media_s3_bucket_name
   })
 }
 

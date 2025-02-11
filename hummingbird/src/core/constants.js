@@ -6,3 +6,10 @@ export const CUSTOM_FORMIDABLE_ERRORS = {
     httpCode: 400,
   },
 };
+
+export const EVENTS = {
+  DELETE_MEDIA: {
+    topicArn: process.env.MEDIA_MANAGEMENT_TOPIC_ARN,
+    type: 'media.v1.delete',
+  },
+};

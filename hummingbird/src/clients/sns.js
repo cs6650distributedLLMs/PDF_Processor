@@ -1,5 +1,6 @@
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 import { isLocalEnv } from '../core/utils.js';
+import { EVENTS } from '../core/constants.js';
 
 const endpoint = isLocalEnv()
   ? 'http://sns.localhost.localstack.cloud:4566'
@@ -29,4 +30,21 @@ export const publishEvent = async ({ topicArn, message }) => {
     console.log(error);
     throw error;
   }
+};
+
+/**
+ * Publishes a delete media event to the media management topic
+ * @param {string} key Media key to delete
+ * @return {Promise<void>}
+ */
+export const publishDeleteMediaEvent = async (key) => {
+  const message = {
+    type: EVENTS.DELETE_MEDIA.type,
+    payload: { key },
+  };
+
+  await publishEvent({
+    topicArn: EVENTS.DELETE_MEDIA.topicArn,
+    message,
+  });
 };
