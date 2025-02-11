@@ -1,5 +1,3 @@
-data "aws_caller_identity" "current" {}
-
 resource "aws_sqs_queue" "media_management_sqs_queue" {
   name                      = var.media_mngmt_queue_name
   delay_seconds             = 10

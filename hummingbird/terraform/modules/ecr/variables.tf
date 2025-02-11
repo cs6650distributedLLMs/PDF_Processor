@@ -4,6 +4,12 @@ variable "additional_tags" {
   default     = {}
 }
 
+variable "aws_region" {
+  description = "The AWS region to deploy resources."
+  type        = string
+  default     = "us-west-2"
+}
+
 variable "ecr_repository_name" {
   description = "Name of the ECR repository"
   type        = string

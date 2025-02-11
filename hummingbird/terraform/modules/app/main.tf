@@ -1,7 +1,3 @@
-data "aws_region" "current" {
-  name = "us-west-2"
-}
-
 resource "aws_vpc" "vpc" {
   cidr_block = "10.0.0.0/24"
 
@@ -13,7 +9,7 @@ resource "aws_vpc" "vpc" {
 resource "aws_subnet" "public_subnet_one" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = "10.0.0.0/26"
-  availability_zone       = "us-west-2a"
+  availability_zone       = "${var.aws_region}a"
   map_public_ip_on_launch = true
 
   tags = merge(var.additional_tags, {
@@ -24,7 +20,7 @@ resource "aws_subnet" "public_subnet_one" {
 resource "aws_subnet" "public_subnet_two" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = "10.0.0.64/26"
-  availability_zone       = "us-west-2b"
+  availability_zone       = "${var.aws_region}b"
   map_public_ip_on_launch = true
 
   tags = merge(var.additional_tags, {
@@ -35,7 +31,7 @@ resource "aws_subnet" "public_subnet_two" {
 resource "aws_subnet" "private_subnet_one" {
   vpc_id            = aws_vpc.vpc.id
   cidr_block        = "10.0.0.128/26"
-  availability_zone = "us-west-2a"
+  availability_zone = "${var.aws_region}a"
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-private-subnet-one"
@@ -45,7 +41,7 @@ resource "aws_subnet" "private_subnet_one" {
 resource "aws_subnet" "private_subnet_two" {
   vpc_id            = aws_vpc.vpc.id
   cidr_block        = "10.0.0.192/26"
-  availability_zone = "us-west-2b"
+  availability_zone = "${var.aws_region}b"
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-private-subnet-two"
@@ -168,7 +164,7 @@ resource "aws_route_table_association" "private_route_table_two_association" {
 
 resource "aws_vpc_endpoint" "dynamo_db_endpoint" {
   vpc_id       = aws_vpc.vpc.id
-  service_name = "com.amazonaws.${data.aws_region.current.name}.dynamodb"
+  service_name = "com.amazonaws.${var.aws_region}.dynamodb"
   route_table_ids = [
     aws_route_table.private_route_table_one.id,
     aws_route_table.private_route_table_two.id,
@@ -391,6 +387,15 @@ data "aws_iam_policy_document" "ecs_iam_role_policy" {
     ]
     resources = [var.dynamodb_table_arn]
   }
+
+  statement {
+    sid    = "SNS"
+    effect = "Allow"
+    actions = [
+      "sns:Publish"
+    ]
+    resources = [var.media_management_topic_arn]
+  }
 }
 
 resource "aws_iam_role_policy" "ecs_role_policy" {
@@ -439,7 +444,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/hummingbird",
-          "awslogs-region": "${data.aws_region.current.name}",
+          "awslogs-region": "${var.aws_region}",
           "awslogs-stream-prefix": "ecs"
         }
       }

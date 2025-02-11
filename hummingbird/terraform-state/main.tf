@@ -18,6 +18,7 @@ locals {
 
 resource "aws_s3_bucket" "terraform_remote_state_bucket" {
   bucket = "hummingbird-terraform-state-bucket"
+  region = var.aws_region
 
   tags = merge(local.common_tags, {
     Name = "hummingbird-terraform-state-bucket"

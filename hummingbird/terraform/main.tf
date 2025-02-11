@@ -10,7 +10,7 @@ terraform {
   backend "s3" {
     bucket         = "hummingbird-terraform-state-bucket"
     key            = "hummingbird/terraform.tfstate"
-    region         = "us-west-2"
+    region         = var.aws_region
     dynamodb_table = "hummingbird-terraform-state-lock-table"
     encrypt        = true
   }
@@ -32,6 +32,7 @@ module "media_bucket" {
 module "ecr" {
   source          = "./modules/ecr"
   additional_tags = local.common_tags
+  aws_region      = var.aws_region
 }
 
 module "cloudwatch" {
@@ -44,6 +45,13 @@ module "dynamodb" {
   additional_tags = local.common_tags
 }
 
+module "eventing" {
+  depends_on = [module.ecr]
+
+  source          = "./modules/eventing"
+  additional_tags = local.common_tags
+}
+
 module "app" {
   depends_on = [
     module.media_bucket,
@@ -52,19 +60,14 @@ module "app" {
     module.dynamodb
   ]
 
-  source              = "./modules/app"
-  additional_tags     = local.common_tags
-  dynamodb_table_arn  = module.dynamodb.dynamodb_table_arn
-  dynamodb_table_name = module.dynamodb.dynamodb_table_name
-  ecr_repository_arn  = module.ecr.ecr_repository_arn
-  image_uri           = module.ecr.image_uri
-  media_bucket_arn    = module.media_bucket.media_bucket_arn
-  node_env            = var.node_env
-}
-
-module "eventing" {
-  depends_on = [module.ecr]
-
-  source          = "./modules/eventing"
-  additional_tags = local.common_tags
+  source                     = "./modules/app"
+  additional_tags            = local.common_tags
+  aws_region                 = var.aws_region
+  dynamodb_table_arn         = module.dynamodb.dynamodb_table_arn
+  dynamodb_table_name        = module.dynamodb.dynamodb_table_name
+  ecr_repository_arn         = module.ecr.ecr_repository_arn
+  image_uri                  = module.ecr.image_uri
+  media_bucket_arn           = module.media_bucket.media_bucket_arn
+  media_management_topic_arn = module.eventing.media_management_topic_arn
+  node_env                   = var.node_env
 }

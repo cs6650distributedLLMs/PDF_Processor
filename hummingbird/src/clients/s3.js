@@ -19,7 +19,7 @@ export const uploadMediaToS3 = ({ key, writeStream }) => {
     const upload = new Upload({
       client: new S3Client({
         endpoint,
-        region: 'us-west-2',
+        region: process.env.AWS_REGION,
       }),
       params: {
         Bucket: 'hummingbird-app-media-bucket',
@@ -44,7 +44,7 @@ export const getMediaUrl = async (key) => {
   try {
     const client = new S3Client({
       endpoint,
-      region: 'us-west-2',
+      region: process.env.AWS_REGION,
     });
 
     const command = new GetObjectCommand({

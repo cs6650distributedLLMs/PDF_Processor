@@ -35,7 +35,7 @@ export const createMedia = async ({ key, size, name, mimetype }) => {
   try {
     const client = new DynamoDBClient({
       endpoint,
-      region: 'us-west-2',
+      region: process.env.AWS_REGION,
     });
 
     await client.send(command);
@@ -63,7 +63,7 @@ export const getMedia = async (key) => {
   try {
     const client = new DynamoDBClient({
       endpoint,
-      region: 'us-west-2',
+      region: process.env.AWS_REGION,
     });
 
     const { Item } = await client.send(command);

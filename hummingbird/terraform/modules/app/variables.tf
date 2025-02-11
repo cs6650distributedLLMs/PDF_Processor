@@ -4,6 +4,12 @@ variable "additional_tags" {
   default     = {}
 }
 
+variable "aws_region" {
+  description = "The AWS region to deploy resources."
+  type        = string
+  default     = "us-west-2"
+}
+
 variable "app_port" {
   description = "Port the application listens on"
   type        = number
@@ -32,6 +38,11 @@ variable "dynamodb_table_arn" {
 
 variable "media_bucket_arn" {
   description = "ARN of the S3 bucket for media files"
+  type        = string
+}
+
+variable "media_management_topic_arn" {
+  description = "ARN of the SNS topic for media management"
   type        = string
 }
 

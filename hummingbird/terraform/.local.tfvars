@@ -1,1 +1,2 @@
-node_env = "development"
+node_env   = "development"
+aws_region = "us-west-2"
