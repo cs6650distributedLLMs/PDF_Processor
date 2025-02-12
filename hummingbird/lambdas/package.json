@@ -1,0 +1,35 @@
+{
+  "name": "hummingbird-lambdas",
+  "version": "0.0.1",
+  "description": "Hummingbird Lambdas",
+  "engines": {
+    "node": ">=22.13.0",
+    "npm": ">=10.9.2"
+  },
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup -c"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wederribas/cs7990-master-thesis.git"
+  },
+  "keywords": [
+    "cs7990"
+  ],
+  "author": "Weder Ribas <me@wederribas.com>",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/wederribas/cs7990-master-thesis/issues"
+  },
+  "homepage": "https://github.com/wederribas/cs7990-master-thesis#readme",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.2",
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "rollup": "^4.34.6"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}
