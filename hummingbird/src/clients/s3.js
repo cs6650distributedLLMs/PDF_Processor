@@ -22,7 +22,7 @@ export const uploadMediaToS3 = ({ key, writeStream }) => {
         region: process.env.AWS_REGION,
       }),
       params: {
-        Bucket: 'hummingbird-app-media-bucket',
+        Bucket: process.env.MEDIA_BUCKET_NAME,
         Key: key,
         Body: writeStream,
       },
@@ -48,7 +48,7 @@ export const getMediaUrl = async (key) => {
     });
 
     const command = new GetObjectCommand({
-      Bucket: 'hummingbird-app-media-bucket',
+      Bucket: process.env.MEDIA_BUCKET_NAME,
       Key: key,
     });
 

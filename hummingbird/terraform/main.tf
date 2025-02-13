@@ -72,3 +72,19 @@ module "app" {
   media_management_topic_arn = module.eventing.media_management_topic_arn
   node_env                   = var.node_env
 }
+
+module "lambdas" {
+  depends_on = [
+    module.dynamodb,
+    module.media_bucket
+  ]
+
+  source                         = "./modules/lambda"
+  additional_tags                = local.common_tags
+  dynamodb_table_arn             = module.dynamodb.dynamodb_table_arn
+  dynamodb_table_name            = module.dynamodb.dynamodb_table_name
+  media_bucket_id                = module.media_bucket.media_bucket_id
+  media_bucket_arn               = module.media_bucket.media_bucket_arn
+  media_s3_bucket_name           = var.media_s3_bucket_name
+  media_management_sqs_queue_arn = module.eventing.media_management_sqs_queue_arn
+}

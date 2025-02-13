@@ -434,6 +434,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
         {"name": "HUMMINGBIRD_DYNAMO_TABLE", "value": "${var.dynamodb_table_name}"},
         {"name": "MEDIA_BUCKET_NAME", "value": "${var.media_s3_bucket_name}"},
         {"name": "MEDIA_MANAGEMENT_TOPIC_ARN", "value": "${var.media_management_topic_arn}"},
+        {"name": "MEDIA_DYNAMODB_TABLE_NAME", "value": "${var.dynamodb_table_name}"},
         {"name": "NODE_ENV", "value": "${var.node_env}"}
       ],
       "portMappings": [

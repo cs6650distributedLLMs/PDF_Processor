@@ -4,6 +4,7 @@ import {
   PutItemCommand,
 } from '@aws-sdk/client-dynamodb';
 import { isLocalEnv } from '../core/utils.js';
+import { MEDIA_STATUS } from '../core/constants.js';
 
 const endpoint = isLocalEnv()
   ? 'http://dynamodb.localhost.localstack.cloud:4566'
@@ -19,7 +20,7 @@ const endpoint = isLocalEnv()
  * @return {Promise<void>}
  */
 export const createMedia = async ({ key, size, name, mimetype }) => {
-  const TableName = 'hummingbird-app-table';
+  const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
   const command = new PutItemCommand({
     TableName,
     Item: {
@@ -28,7 +29,7 @@ export const createMedia = async ({ key, size, name, mimetype }) => {
       size: { N: size.toString() },
       name: { S: name },
       mimetype: { S: mimetype },
-      bucket: { S: 'media' },
+      status: { S: MEDIA_STATUS.PENDING },
     },
   });
 
@@ -51,7 +52,7 @@ export const createMedia = async ({ key, size, name, mimetype }) => {
  * @return {Promise<object>} The media object metadata.
  */
 export const getMedia = async (key) => {
-  const TableName = 'hummingbird-app-table';
+  const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
   const command = new GetItemCommand({
     TableName,
     Key: {
@@ -77,6 +78,7 @@ export const getMedia = async (key) => {
       size: Number(Item.size.N),
       name: Item.name.S,
       mimetype: Item.mimetype.S,
+      status: Item.status.S,
     };
   } catch (error) {
     console.log(error);

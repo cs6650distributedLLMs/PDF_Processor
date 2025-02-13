@@ -13,3 +13,10 @@ export const EVENTS = {
     type: 'media.v1.delete',
   },
 };
+
+export const MEDIA_STATUS = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  COMPLETE: 'COMPLETE',
+  ERROR: 'ERROR',
+};

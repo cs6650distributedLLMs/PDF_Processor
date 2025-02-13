@@ -134,3 +134,6 @@ dist
 
 # VSCode
 .vscode/
+
+# Bundled lambdas
+lambda-functions-payload.zip

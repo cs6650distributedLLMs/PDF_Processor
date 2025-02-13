@@ -1,13 +1,17 @@
 resource "aws_sqs_queue" "media_management_sqs_queue" {
   name                      = var.media_mngmt_queue_name
   delay_seconds             = 10
-  max_message_size          = 1024 * 5     // 5 KB
-  message_retention_seconds = 60 * 60 * 24 // 1 day
+  max_message_size          = 1024 * 5     # 5 KB
+  message_retention_seconds = 60 * 60 * 24 # 1 day
   receive_wait_time_seconds = 5
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.media_management_sqs_dlq.arn
     maxReceiveCount     = 5
   })
+
+  # Six times the Lambda timeout.
+  # https://docs.aws.amazon.com/lambda/latest/dg/services-sqs-configure.html
+  visibility_timeout_seconds = 60
 
   tags = merge(var.additional_tags, {
     Name = var.media_mngmt_queue_name
