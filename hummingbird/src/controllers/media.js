@@ -9,7 +9,11 @@ import {
 } from '../core/responses.js';
 import { uploadMedia } from '../actions/uploadMedia.js';
 import { convertBytesToMb } from '../core/utils.js';
-import { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS } from '../core/constants.js';
+import {
+  MAX_FILE_SIZE,
+  CUSTOM_FORMIDABLE_ERRORS,
+  MEDIA_STATUS,
+} from '../core/constants.js';
 import { getProcessedMediaUrl } from '../clients/s3.js';
 import { createMedia, getMedia } from '../clients/dynamodb.js';
 import { getLogger } from '../logger.js';
@@ -67,6 +71,23 @@ export const uploadController = async (req, res) => {
   }
 };
 
+export const statusController = async (req, res) => {
+  try {
+    const mediaId = req.params.id;
+    const media = await getMedia(mediaId);
+
+    if (!media) {
+      sendNotFoundResponse(res);
+      return;
+    }
+
+    sendOkResponse(res, { status: media.status });
+  } catch (error) {
+    logger.error(error);
+    sendErrorResponse(res);
+  }
+};
+
 export const downloadController = async (req, res) => {
   try {
     const mediaId = req.params.id;
@@ -74,6 +95,16 @@ export const downloadController = async (req, res) => {
     const media = await getMedia(mediaId);
     if (!media) {
       sendNotFoundResponse(res);
+      return;
+    }
+
+    if (media.status !== MEDIA_STATUS.COMPLETE) {
+      const SIXTY_SECONDS = 60;
+      res.set('Retry-After', SIXTY_SECONDS);
+      res.set('Location', `${req.hostname}/v1/media/${mediaId}/status`);
+      sendAcceptedResponse(res, {
+        message: 'Media processing in progress.',
+      });
       return;
     }
 

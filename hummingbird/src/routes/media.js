@@ -3,12 +3,15 @@ import {
   deleteController,
   downloadController,
   getController,
+  statusController,
   uploadController,
 } from '../controllers/media.js';
 
 const router = Router();
 
 router.post('/upload', uploadController);
+
+router.get('/:id/status', statusController);
 
 router.get('/:id/download', downloadController);
 

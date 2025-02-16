@@ -5,7 +5,7 @@ set -x
 awslocal dynamodb update-item \
     --table-name hummingbird-app-table \
     --key '{ 
-        "PK": {"S": "MEDIA#d89314be-cfcf-4c91-b82b-913ac74ffecc"}, 
+        "PK": {"S": "MEDIA#2d76ede6-6853-4120-af82-1660e2dff053"},
         "SK": {"S": "METADATA"}
     }' \
     --update-expression "SET #status = :newStatus" \
@@ -15,5 +15,5 @@ awslocal dynamodb update-item \
     }' \
     --expression-attribute-values '{
         ":newStatus": {"S": "PENDING"},
-        ":currentStatus": {"S": "COMPLETED"}
+        ":currentStatus": {"S": "COMPLETE"}
     }'
