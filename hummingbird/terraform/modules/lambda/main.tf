@@ -175,6 +175,32 @@ resource "aws_lambda_event_source_mapping" "delete_media_sqs_event_source_mappin
   )
 }
 
+#######################################
+# Build lambda layer for sharp module #
+#######################################
+resource "null_resource" "build_sharp_lambda_layer" {
+  provisioner "local-exec" {
+    command     = "sh build-lambda-layer.sh"
+    working_dir = "${local.lambda_src_path}/sharp-layer"
+  }
+
+  triggers = {
+    should_trigger_resource = local.source_directory_hash
+  }
+}
+
+locals {
+  layer_content_hash = filesha256("${local.lambda_src_path}/sharp-layer/layer-content.zip")
+}
+
+resource "aws_lambda_layer_version" "sharp_lambda_layer" {
+  depends_on          = [null_resource.build_sharp_lambda_layer]
+  filename            = "${local.lambda_src_path}/sharp-layer/layer-content.zip"
+  layer_name          = "humminbird-sharp-lambda-layer"
+  compatible_runtimes = ["nodejs22.x"]
+  source_code_hash    = local.layer_content_hash
+}
+
 ########################
 # Process Media Lambda #
 ########################
@@ -191,6 +217,9 @@ resource "aws_iam_role" "process_media_iam_role" {
 }
 
 resource "aws_lambda_function" "process_media" {
+  depends_on = [aws_lambda_layer_version.sharp_lambda_layer]
+  layers     = [aws_lambda_layer_version.sharp_lambda_layer.arn]
+
   filename         = local.lambda_zip_file
   function_name    = "hummingbird-process-media-handler"
   role             = aws_iam_role.process_media_iam_role.arn
@@ -250,6 +279,7 @@ resource "aws_s3_bucket_notification" "media_bucket_notification" {
   lambda_function {
     lambda_function_arn = aws_lambda_function.process_media.arn
     events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "uploads/"
   }
 
   depends_on = [aws_lambda_permission.allow_bucket]
