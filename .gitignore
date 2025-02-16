@@ -135,5 +135,9 @@ dist
 # VSCode
 .vscode/
 
+# Apple files
+.DS_Store
+
 # Bundled lambdas
 lambda-functions-payload.zip
+layer-content.zip
