@@ -1,30 +1,80 @@
-import { S3Client, HeadObjectCommand } from '@aws-sdk/client-s3';
-import { withLogging } from '../common.js';
+import sharp from 'sharp';
+import { getMediaId, withLogging } from '../common.js';
+import {
+  setMediaStatus,
+  setMediaStatusConditionally,
+} from '../../src/clients/dynamodb.js';
+import { getMediaFile, uploadMediaToS3 } from '../../src/clients/s3.js';
+import { MEDIA_STATUS } from '../../src/core/constants.js';
 
-const client = new S3Client();
-
+/**
+ * Gets the handler for the processMedia Lambda function.
+ * @return {Function} The Lambda function handler
+ * @see https://docs.aws.amazon.com/lambda/latest/dg/nodejs-handler.html
+ */
 const getHandler = () => {
+  /**
+   * Processes a media file uploaded to S3.
+   * @param {object} event The S3 event object
+   * @param {object} context The Lambda execution context
+   * @return {Promise<void>}
+   */
   return async (event, context) => {
-    const bucket = event.Records[0].s3.bucket.name;
-    const key = decodeURIComponent(event.Records[0].s3.object.key);
+    const mediaId = getMediaId(event.Records[0].s3.object.key);
 
     try {
-      const { ContentType } = await client.send(
-        new HeadObjectCommand({
-          Bucket: bucket,
-          Key: key,
-        })
-      );
+      await setMediaStatusConditionally({
+        mediaId,
+        newStatus: MEDIA_STATUS.PROCESSING,
+        expectedCurrentStatus: MEDIA_STATUS.PENDING,
+      });
 
-      console.log('CONTENT TYPE:', ContentType);
-      return ContentType;
+      const image = await getMediaFile(mediaId);
+      const resizedImage = await resizeImage(image);
+
+      await uploadMediaToS3({
+        mediaId,
+        body: resizedImage,
+        keyPrefix: 'resized',
+      });
+
+      await setMediaStatusConditionally({
+        mediaId,
+        newStatus: MEDIA_STATUS.COMPLETE,
+        expectedCurrentStatus: MEDIA_STATUS.PROCESSING,
+      });
+
+      console.log(`Resized image ${mediaId}.`);
     } catch (err) {
+      if (err instanceof ConditionalCheckFailedException) {
+        console.log(
+          `Media ${mediaId} not found or status is not ${MEDIA_STATUS.PROCESSING}.`
+        );
+        return;
+      }
+
+      await setMediaStatus({
+        mediaId,
+        newStatus: MEDIA_STATUS.ERROR,
+      });
+
       console.log(err);
-      const message = `Error getting object ${key} from bucket ${bucket}.`;
-      console.log(message);
-      throw new Error(message);
+      throw err;
     }
   };
+};
+
+/**
+ * Resizes an image to a specific width and converts it to JPEG format.
+ * @param {Uint8Array} imageBuffer The image buffer to resize
+ * @return {Promise<Buffer>} The resized image buffer
+ */
+const resizeImage = async (imageBuffer) => {
+  const IMAGE_WIDTH_PX = 500;
+  return await sharp(imageBuffer)
+    .resize(IMAGE_WIDTH_PX)
+    .toFormat('jpeg')
+    .toBuffer();
 };
 
 export const handler = withLogging(getHandler());

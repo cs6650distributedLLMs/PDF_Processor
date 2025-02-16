@@ -34,13 +34,13 @@ export const publishEvent = async ({ topicArn, message }) => {
 
 /**
  * Publishes a delete media event to the media management topic
- * @param {string} key Media key to delete
+ * @param {string} mediaId The ID of the media to delete
  * @return {Promise<void>}
  */
-export const publishDeleteMediaEvent = async (key) => {
+export const publishDeleteMediaEvent = async (mediaId) => {
   const message = {
     type: EVENTS.DELETE_MEDIA.type,
-    payload: { key },
+    payload: { mediaId },
   };
 
   await publishEvent({

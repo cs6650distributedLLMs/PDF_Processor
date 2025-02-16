@@ -21,3 +21,13 @@ export const withEventLogging =
   };
 
 export const withLogging = flow(withEventLogging, withErrorLogging);
+
+export const getMediaId = (s3Key) => {
+  const lastSlashIndex = s3Key.lastIndexOf('/');
+
+  if (lastSlashIndex === -1) {
+    return s3Key;
+  }
+
+  return s3Key.substring(lastSlashIndex + 1);
+};

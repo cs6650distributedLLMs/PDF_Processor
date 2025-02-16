@@ -10,7 +10,7 @@ import {
 import { uploadMedia } from '../actions/uploadMedia.js';
 import { convertBytesToMb } from '../core/utils.js';
 import { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS } from '../core/constants.js';
-import { getMediaUrl } from '../clients/s3.js';
+import { getProcessedMediaUrl } from '../clients/s3.js';
 import { createMedia, getMedia } from '../clients/dynamodb.js';
 import { getLogger } from '../logger.js';
 import { publishDeleteMediaEvent } from '../clients/sns.js';
@@ -19,12 +19,12 @@ const logger = getLogger();
 
 export const uploadController = async (req, res) => {
   try {
-    const { key, file } = await uploadMedia(req);
+    const { mediaId, file } = await uploadMedia(req);
     const { size, originalFilename: name, mimetype } = file;
 
-    await createMedia({ key, size, name, mimetype });
+    await createMedia({ mediaId, size, name, mimetype });
 
-    sendAcceptedResponse(res, { fileId: key });
+    sendAcceptedResponse(res, { mediaId });
   } catch (error) {
     if (error.httpCode && error.code) {
       if (error.code === formidableErrors.biggerThanTotalMaxFileSize) {
@@ -69,15 +69,15 @@ export const uploadController = async (req, res) => {
 
 export const downloadController = async (req, res) => {
   try {
-    const key = req.params.id;
+    const mediaId = req.params.id;
 
-    const media = await getMedia(key);
+    const media = await getMedia(mediaId);
     if (!media) {
       sendNotFoundResponse(res);
       return;
     }
 
-    const url = await getMediaUrl(key);
+    const url = await getProcessedMediaUrl(mediaId);
 
     res.redirect(302, url);
   } catch (error) {
@@ -88,8 +88,8 @@ export const downloadController = async (req, res) => {
 
 export const getController = async (req, res) => {
   try {
-    const key = req.params.id;
-    const media = await getMedia(key);
+    const mediaId = req.params.id;
+    const media = await getMedia(mediaId);
 
     if (!media) {
       sendNotFoundResponse(res);
@@ -105,17 +105,17 @@ export const getController = async (req, res) => {
 
 export const deleteController = async (req, res) => {
   try {
-    const key = req.params.id;
+    const mediaId = req.params.id;
 
-    const media = await getMedia(key);
+    const media = await getMedia(mediaId);
     if (!media) {
       sendNotFoundResponse(res);
       return;
     }
 
-    await publishDeleteMediaEvent(key);
+    await publishDeleteMediaEvent(mediaId);
 
-    sendAcceptedResponse(res, { keyToDelete: key });
+    sendAcceptedResponse(res, { mediaIdToDelete: mediaId });
   } catch (error) {
     logger.error(error);
     sendErrorResponse(res);
