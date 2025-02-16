@@ -106,6 +106,32 @@ data "archive_file" "lambda" {
   depends_on = [null_resource.build_lambda_bundle]
 }
 
+#######################################
+# Build lambda layer for sharp module #
+#######################################
+resource "null_resource" "build_sharp_lambda_layer" {
+  provisioner "local-exec" {
+    command     = "sh build-lambda-layer.sh"
+    working_dir = "${local.lambda_src_path}/sharp-layer"
+  }
+
+  triggers = {
+    should_trigger_resource = local.source_directory_hash
+  }
+}
+
+locals {
+  layer_content_hash = filesha256("${local.lambda_src_path}/sharp-layer/layer-content.zip")
+}
+
+resource "aws_lambda_layer_version" "sharp_lambda_layer" {
+  depends_on          = [null_resource.build_sharp_lambda_layer]
+  filename            = "${local.lambda_src_path}/sharp-layer/layer-content.zip"
+  layer_name          = "humminbird-sharp-lambda-layer"
+  compatible_runtimes = ["nodejs22.x"]
+  source_code_hash    = local.layer_content_hash
+}
+
 ########################
 # Delete Media Lambda #
 ########################
@@ -122,6 +148,9 @@ resource "aws_iam_role" "delete_media_iam_role" {
 }
 
 resource "aws_lambda_function" "delete_media" {
+  depends_on = [aws_lambda_layer_version.sharp_lambda_layer]
+  layers     = [aws_lambda_layer_version.sharp_lambda_layer.arn]
+
   filename         = local.lambda_zip_file
   function_name    = "hummingbird-delete-media-handler"
   role             = aws_iam_role.delete_media_iam_role.arn
@@ -173,32 +202,6 @@ resource "aws_lambda_event_source_mapping" "delete_media_sqs_event_source_mappin
       Name = "hummingbird-delete-media-sqs-event-source-mapping"
     }
   )
-}
-
-#######################################
-# Build lambda layer for sharp module #
-#######################################
-resource "null_resource" "build_sharp_lambda_layer" {
-  provisioner "local-exec" {
-    command     = "sh build-lambda-layer.sh"
-    working_dir = "${local.lambda_src_path}/sharp-layer"
-  }
-
-  triggers = {
-    should_trigger_resource = local.source_directory_hash
-  }
-}
-
-locals {
-  layer_content_hash = filesha256("${local.lambda_src_path}/sharp-layer/layer-content.zip")
-}
-
-resource "aws_lambda_layer_version" "sharp_lambda_layer" {
-  depends_on          = [null_resource.build_sharp_lambda_layer]
-  filename            = "${local.lambda_src_path}/sharp-layer/layer-content.zip"
-  layer_name          = "humminbird-sharp-lambda-layer"
-  compatible_runtimes = ["nodejs22.x"]
-  source_code_hash    = local.layer_content_hash
 }
 
 ########################
