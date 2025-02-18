@@ -33,3 +33,8 @@ variable "media_management_sqs_queue_arn" {
   description = "ARN of the SQS queue for media management"
   type        = string
 }
+
+variable "lambdas_src_path" {
+  description = "Path to the directory containing the lambda source code"
+  type        = string
+}

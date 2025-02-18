@@ -23,6 +23,14 @@ locals {
   }
 }
 
+module "networking" {
+  source               = "./modules/networking"
+  additional_tags      = local.common_tags
+  vpc_cidr             = "10.0.0.0/24"
+  public_subnet_cidrs  = ["10.0.0.0/26", "10.0.0.64/26"]
+  private_subnet_cidrs = ["10.0.0.128/26", "10.0.0.192/26"]
+}
+
 module "media_bucket" {
   source               = "./modules/media-bucket"
   additional_tags      = local.common_tags
@@ -30,9 +38,10 @@ module "media_bucket" {
 }
 
 module "ecr" {
-  source          = "./modules/ecr"
-  additional_tags = local.common_tags
-  aws_region      = var.aws_region
+  source               = "./modules/ecr"
+  additional_tags      = local.common_tags
+  aws_region           = var.aws_region
+  docker_build_context = "../src"
 }
 
 module "cloudwatch" {
@@ -41,8 +50,13 @@ module "cloudwatch" {
 }
 
 module "dynamodb" {
-  source          = "./modules/dynamodb"
-  additional_tags = local.common_tags
+  depends_on = [module.networking]
+
+  source                  = "./modules/dynamodb"
+  additional_tags         = local.common_tags
+  aws_region              = var.aws_region
+  vpc_id                  = module.networking.vpc_id
+  private_route_table_ids = module.networking.private_route_table_ids
 }
 
 module "eventing" {
@@ -54,10 +68,11 @@ module "eventing" {
 
 module "app" {
   depends_on = [
-    module.media_bucket,
-    module.ecr,
     module.cloudwatch,
-    module.dynamodb
+    module.dynamodb,
+    module.ecr,
+    module.media_bucket,
+    module.networking
   ]
 
   source                     = "./modules/app"
@@ -67,10 +82,13 @@ module "app" {
   dynamodb_table_name        = module.dynamodb.dynamodb_table_name
   ecr_repository_arn         = module.ecr.ecr_repository_arn
   image_uri                  = module.ecr.image_uri
-  media_s3_bucket_name       = var.media_s3_bucket_name
   media_bucket_arn           = module.media_bucket.media_bucket_arn
   media_management_topic_arn = module.eventing.media_management_topic_arn
+  media_s3_bucket_name       = var.media_s3_bucket_name
   node_env                   = var.node_env
+  private_subnet_ids         = module.networking.private_subnet_ids
+  public_subnet_ids          = module.networking.public_subnet_ids
+  vpc_id                     = module.networking.vpc_id
 }
 
 module "lambdas" {
@@ -83,8 +101,9 @@ module "lambdas" {
   additional_tags                = local.common_tags
   dynamodb_table_arn             = module.dynamodb.dynamodb_table_arn
   dynamodb_table_name            = module.dynamodb.dynamodb_table_name
-  media_bucket_id                = module.media_bucket.media_bucket_id
+  lambdas_src_path               = "../lambdas"
   media_bucket_arn               = module.media_bucket.media_bucket_arn
-  media_s3_bucket_name           = var.media_s3_bucket_name
+  media_bucket_id                = module.media_bucket.media_bucket_id
   media_management_sqs_queue_arn = module.eventing.media_management_sqs_queue_arn
+  media_s3_bucket_name           = var.media_s3_bucket_name
 }

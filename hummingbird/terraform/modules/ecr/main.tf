@@ -65,14 +65,13 @@ resource "aws_ecr_repository_policy" "ecr_repository_policy" {
 }
 
 locals {
-  build_path = "${path.module}/../../${var.docker_build_context}"
   files_to_hash = setsubtract(
-    fileset(local.build_path, "**/*"),
-    fileset(local.build_path, "node_modules/**/*")
+    fileset(var.docker_build_context, "**/*"),
+    fileset(var.docker_build_context, "node_modules/**/*")
   )
   file_hashes = {
     for file in local.files_to_hash :
-    file => filesha256("${local.build_path}/${file}")
+    file => filesha256("${var.docker_build_context}/${file}")
   }
   combined_hash_input   = join("", values(local.file_hashes))
   source_directory_hash = sha256(local.combined_hash_input)

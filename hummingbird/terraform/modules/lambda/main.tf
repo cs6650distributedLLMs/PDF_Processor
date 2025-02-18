@@ -75,12 +75,12 @@ resource "aws_iam_policy" "lambda_iam_policy" {
 locals {
   lambda_src_path = "${path.module}/../../../lambdas"
   files_to_hash = setsubtract(
-    fileset(local.lambda_src_path, "**/*"),
-    fileset(local.lambda_src_path, "node_modules/**/*")
+    fileset(var.lambdas_src_path, "**/*"),
+    fileset(var.lambdas_src_path, "node_modules/**/*")
   )
   file_hashes = {
     for file in local.files_to_hash :
-    file => filesha256("${local.lambda_src_path}/${file}")
+    file => filesha256("${var.lambdas_src_path}/${file}")
   }
   combined_hash_input   = join("", values(local.file_hashes))
   source_directory_hash = sha256(local.combined_hash_input)
@@ -90,7 +90,7 @@ locals {
 resource "null_resource" "build_lambda_bundle" {
   provisioner "local-exec" {
     command     = "npm run build"
-    working_dir = local.lambda_src_path
+    working_dir = var.lambdas_src_path
   }
 
   triggers = {
@@ -112,7 +112,7 @@ data "archive_file" "lambda" {
 resource "null_resource" "build_sharp_lambda_layer" {
   provisioner "local-exec" {
     command     = "sh build-lambda-layer.sh"
-    working_dir = "${local.lambda_src_path}/sharp-layer"
+    working_dir = "${var.lambdas_src_path}/sharp-layer"
   }
 
   triggers = {
@@ -121,12 +121,12 @@ resource "null_resource" "build_sharp_lambda_layer" {
 }
 
 locals {
-  layer_content_hash = filesha256("${local.lambda_src_path}/sharp-layer/layer-content.zip")
+  layer_content_hash = filesha256("${var.lambdas_src_path}/sharp-layer/layer-content.zip")
 }
 
 resource "aws_lambda_layer_version" "sharp_lambda_layer" {
   depends_on          = [null_resource.build_sharp_lambda_layer]
-  filename            = "${local.lambda_src_path}/sharp-layer/layer-content.zip"
+  filename            = "${var.lambdas_src_path}/sharp-layer/layer-content.zip"
   layer_name          = "humminbird-sharp-lambda-layer"
   compatible_runtimes = ["nodejs22.x"]
   source_code_hash    = local.layer_content_hash

@@ -7,7 +7,11 @@ variable "additional_tags" {
 variable "aws_region" {
   description = "The AWS region to deploy resources."
   type        = string
-  default     = "us-west-2"
+}
+
+variable "vpc_id" {
+  description = "ID of the VPC"
+  type        = string
 }
 
 variable "app_port" {
@@ -54,4 +58,14 @@ variable "node_env" {
 variable "media_s3_bucket_name" {
   description = "S3 bucket for media files"
   type        = string
+}
+
+variable "public_subnet_ids" {
+  description = "IDs of the public subnets"
+  type        = list(string)
+}
+
+variable "private_subnet_ids" {
+  description = "IDs of the private subnets"
+  type        = list(string)
 }

@@ -7,20 +7,20 @@ variable "additional_tags" {
 variable "aws_region" {
   description = "The AWS region to deploy resources."
   type        = string
+  default     = "us-west-2"
 }
 
-variable "vpc_id" {
-  description = "ID of the VPC"
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
   type        = string
 }
 
-variable "private_route_table_ids" {
-  description = "IDs of the private route tables"
+variable "public_subnet_cidrs" {
+  description = "CIDR blocks for the public subnets"
   type        = list(string)
 }
 
-variable "dynamodb_table_name" {
-  description = "Name of the DynamoDB table"
-  type        = string
-  default     = "hummingbird-app-table"
+variable "private_subnet_cidrs" {
+  description = "CIDR blocks for the private subnets"
+  type        = list(string)
 }

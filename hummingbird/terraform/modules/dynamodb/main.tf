@@ -1,3 +1,31 @@
+resource "aws_vpc_endpoint" "dynamo_db_endpoint" {
+  vpc_id          = var.vpc_id
+  service_name    = "com.amazonaws.${var.aws_region}.dynamodb"
+  route_table_ids = var.private_route_table_ids
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-dynamodb-endpoint"
+  })
+}
+
+data "aws_iam_policy_document" "dynamo_db_endpoint_policy" {
+  statement {
+    sid       = "DynamoDBEndpointPolicy"
+    effect    = "Allow"
+    actions   = ["dynamodb:*"]
+    resources = ["*"]
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+  }
+}
+
+resource "aws_vpc_endpoint_policy" "dynamo_db_endpoint_policy" {
+  vpc_endpoint_id = aws_vpc_endpoint.dynamo_db_endpoint.id
+  policy          = data.aws_iam_policy_document.dynamo_db_endpoint_policy.json
+}
+
 resource "aws_dynamodb_table" "media_dynamo_table" {
   name         = var.dynamodb_table_name
   billing_mode = "PAY_PER_REQUEST"

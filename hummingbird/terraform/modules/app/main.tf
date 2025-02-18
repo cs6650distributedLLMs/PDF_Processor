@@ -1,202 +1,7 @@
-resource "aws_vpc" "vpc" {
-  cidr_block = "10.0.0.0/24"
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-vpc"
-  })
-}
-
-resource "aws_subnet" "public_subnet_one" {
-  vpc_id                  = aws_vpc.vpc.id
-  cidr_block              = "10.0.0.0/26"
-  availability_zone       = "${var.aws_region}a"
-  map_public_ip_on_launch = true
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-public-subnet-one"
-  })
-}
-
-resource "aws_subnet" "public_subnet_two" {
-  vpc_id                  = aws_vpc.vpc.id
-  cidr_block              = "10.0.0.64/26"
-  availability_zone       = "${var.aws_region}b"
-  map_public_ip_on_launch = true
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-public-subnet-two"
-  })
-}
-
-resource "aws_subnet" "private_subnet_one" {
-  vpc_id            = aws_vpc.vpc.id
-  cidr_block        = "10.0.0.128/26"
-  availability_zone = "${var.aws_region}a"
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-private-subnet-one"
-  })
-}
-
-resource "aws_subnet" "private_subnet_two" {
-  vpc_id            = aws_vpc.vpc.id
-  cidr_block        = "10.0.0.192/26"
-  availability_zone = "${var.aws_region}b"
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-private-subnet-two"
-  })
-}
-
-resource "aws_internet_gateway" "internet_gateway" {
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-internet-gateway"
-  })
-}
-
-resource "aws_internet_gateway_attachment" "internet_gateway_attachment" {
-  internet_gateway_id = aws_internet_gateway.internet_gateway.id
-  vpc_id              = aws_vpc.vpc.id
-}
-
-resource "aws_route_table" "public_route_table" {
-  vpc_id     = aws_vpc.vpc.id
-  depends_on = [aws_vpc.vpc]
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-public-route-table"
-  })
-}
-
-resource "aws_route" "public_route" {
-  route_table_id         = aws_route_table.public_route_table.id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.internet_gateway.id
-}
-
-resource "aws_route_table_association" "public_subnet_one_association" {
-  subnet_id      = aws_subnet.public_subnet_one.id
-  route_table_id = aws_route_table.public_route_table.id
-}
-
-resource "aws_route_table_association" "public_subnet_two_association" {
-  subnet_id      = aws_subnet.public_subnet_two.id
-  route_table_id = aws_route_table.public_route_table.id
-}
-
-resource "aws_eip" "nat_gateway_one_attachment" {
-  domain = "vpc"
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-nat-gateway-one"
-  })
-}
-
-resource "aws_eip" "nat_gateway_two_attachment" {
-  domain = "vpc"
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-nat-gateway-two"
-  })
-}
-
-resource "aws_nat_gateway" "nat_gateway_one" {
-  allocation_id = aws_eip.nat_gateway_one_attachment.allocation_id
-  subnet_id     = aws_subnet.public_subnet_one.id
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-nat-gateway-one"
-  })
-}
-
-resource "aws_nat_gateway" "nat_gateway_two" {
-  allocation_id = aws_eip.nat_gateway_two_attachment.allocation_id
-  subnet_id     = aws_subnet.public_subnet_two.id
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-nat-gateway-two"
-  })
-}
-
-resource "aws_route_table" "private_route_table_one" {
-  vpc_id     = aws_vpc.vpc.id
-  depends_on = [aws_vpc.vpc]
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-private-route-table-one"
-  })
-}
-
-resource "aws_route" "private_route_one" {
-  route_table_id         = aws_route_table.private_route_table_one.id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = aws_nat_gateway.nat_gateway_one.id
-  depends_on             = [aws_nat_gateway.nat_gateway_one]
-}
-
-resource "aws_route_table_association" "private_route_table_one_association" {
-  route_table_id = aws_route_table.private_route_table_one.id
-  subnet_id      = aws_subnet.private_subnet_one.id
-  depends_on     = [aws_route.private_route_one]
-}
-
-resource "aws_route_table" "private_route_table_two" {
-  vpc_id     = aws_vpc.vpc.id
-  depends_on = [aws_vpc.vpc]
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-private-route-table-two"
-  })
-}
-
-resource "aws_route" "private_route_two" {
-  route_table_id         = aws_route_table.private_route_table_two.id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = aws_nat_gateway.nat_gateway_two.id
-  depends_on             = [aws_nat_gateway.nat_gateway_two]
-}
-
-resource "aws_route_table_association" "private_route_table_two_association" {
-  route_table_id = aws_route_table.private_route_table_two.id
-  subnet_id      = aws_subnet.private_subnet_two.id
-  depends_on     = [aws_route.private_route_two]
-}
-
-resource "aws_vpc_endpoint" "dynamo_db_endpoint" {
-  vpc_id       = aws_vpc.vpc.id
-  service_name = "com.amazonaws.${var.aws_region}.dynamodb"
-  route_table_ids = [
-    aws_route_table.private_route_table_one.id,
-    aws_route_table.private_route_table_two.id,
-  ]
-
-  tags = merge(var.additional_tags, {
-    Name = "hummingbird-dynamodb-endpoint"
-  })
-}
-
-data "aws_iam_policy_document" "dynamo_db_endpoint_policy" {
-  statement {
-    sid       = "DynamoDBEndpointPolicy"
-    effect    = "Allow"
-    actions   = ["dynamodb:*"]
-    resources = ["*"]
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
-  }
-}
-
-resource "aws_vpc_endpoint_policy" "dynamo_db_endpoint_policy" {
-  vpc_endpoint_id = aws_vpc_endpoint.dynamo_db_endpoint.id
-  policy          = data.aws_iam_policy_document.dynamo_db_endpoint_policy.json
-}
-
 resource "aws_security_group" "alb_security_group" {
   name        = "hummingbird-alb-security-group"
   description = "controls access to the ALB"
-  vpc_id      = aws_vpc.vpc.id
+  vpc_id      = var.vpc_id
 
   ingress {
     description = "Allow HTTP traffic from the internet"
@@ -220,11 +25,8 @@ resource "aws_security_group" "alb_security_group" {
 }
 
 resource "aws_alb" "alb" {
-  name = "hummingbird-alb"
-  subnets = [
-    aws_subnet.public_subnet_one.id,
-    aws_subnet.public_subnet_two.id,
-  ]
+  name    = "hummingbird-alb"
+  subnets = var.public_subnet_ids
   security_groups = [
     aws_security_group.alb_security_group.id
   ]
@@ -238,7 +40,7 @@ resource "aws_alb_target_group" "alb_target_group" {
   name        = "hummingbird-alb-target-group"
   port        = var.app_port
   protocol    = "HTTP"
-  vpc_id      = aws_vpc.vpc.id
+  vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
@@ -285,7 +87,7 @@ resource "aws_ecs_cluster" "ecs_cluster" {
 
 resource "aws_security_group" "container_security_group" {
   description = "Access to the Fargate containers"
-  vpc_id      = aws_vpc.vpc.id
+  vpc_id      = var.vpc_id
 
   ingress {
     protocol  = "tcp"
@@ -478,10 +280,7 @@ resource "aws_ecs_service" "ecs_service" {
 
   network_configuration {
     assign_public_ip = false
-    subnets = [
-      aws_subnet.private_subnet_one.id,
-      aws_subnet.private_subnet_two.id,
-    ]
+    subnets          = var.private_subnet_ids
     security_groups = [
       aws_security_group.container_security_group.id
     ]
@@ -490,8 +289,6 @@ resource "aws_ecs_service" "ecs_service" {
   depends_on = [
     aws_ecs_cluster.ecs_cluster,
     aws_ecs_task_definition.ecs_task_definition,
-    aws_subnet.private_subnet_one,
-    aws_subnet.private_subnet_two,
     aws_alb_target_group.alb_target_group
   ]
 

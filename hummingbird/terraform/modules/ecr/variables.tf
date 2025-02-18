@@ -19,5 +19,4 @@ variable "ecr_repository_name" {
 variable "docker_build_context" {
   description = "Path to the directory containing the Dockerfile"
   type        = string
-  default     = "../src"
 }
