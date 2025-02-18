@@ -2,6 +2,10 @@
 
 Monorepo for all code created during the development of my Computer Sciences master thesis.
 
+# Humming Architecture Diagram
+
+![An architecture diagram depicting the AWS services used in the Hummingbird application.](images/hummingbird-architecture-diagram.png)
+
 # Requirements
 
 ## LocalStack CLI
