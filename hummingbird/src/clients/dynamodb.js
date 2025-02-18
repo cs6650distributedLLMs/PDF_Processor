@@ -1,4 +1,5 @@
 import {
+  DeleteItemCommand,
   DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
@@ -156,6 +157,43 @@ export const setMediaStatus = async ({ mediaId, newStatus }) => {
     });
 
     return await client.send(command);
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
+
+/**
+ * Deletes the media object metadata from DynamoDB.
+ * @param {string} mediaId The media ID
+ * @return {Promise<object>}
+ */
+export const deleteMedia = async (mediaId) => {
+  const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
+  const command = new DeleteItemCommand({
+    TableName,
+    Key: {
+      PK: { S: `MEDIA#${mediaId}` },
+      SK: { S: 'METADATA' },
+    },
+    ReturnValues: 'ALL_OLD',
+  });
+
+  try {
+    const client = new DynamoDBClient({
+      endpoint,
+      region: process.env.AWS_REGION,
+    });
+
+    const { Attributes } = await client.send(command);
+
+    if (!Attributes) {
+      return null;
+    }
+
+    return {
+      status: Attributes.status.S,
+    };
   } catch (error) {
     console.log(error);
     throw error;

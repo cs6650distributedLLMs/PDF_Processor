@@ -4,7 +4,7 @@ import {
   setMediaStatus,
   setMediaStatusConditionally,
 } from '../../src/clients/dynamodb.js';
-import { getMediaFile, uploadMediaToS3 } from '../../src/clients/s3.js';
+import { getMediaFile, uploadMediaToStorage } from '../../src/clients/s3.js';
 import { MEDIA_STATUS } from '../../src/core/constants.js';
 
 /**
@@ -32,7 +32,7 @@ const getHandler = () => {
       const image = await getMediaFile(mediaId);
       const resizedImage = await resizeImage(image);
 
-      await uploadMediaToS3({
+      await uploadMediaToStorage({
         mediaId,
         body: resizedImage,
         keyPrefix: 'resized',

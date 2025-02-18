@@ -1,7 +1,7 @@
 import formidable, { errors as formidableErrors } from 'formidable';
 import { Transform } from 'node:stream';
 import { randomUUID } from 'node:crypto';
-import { uploadMediaToS3 } from '../clients/s3.js';
+import { uploadMediaToStorage } from '../clients/s3.js';
 import { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS } from '../core/constants.js';
 
 /**
@@ -73,7 +73,7 @@ export const uploadMedia = async (req) => {
             form.emit('error', error);
           });
 
-          uploadMediaToS3({
+          uploadMediaToStorage({
             mediaId,
             body: this._writeStream,
           })

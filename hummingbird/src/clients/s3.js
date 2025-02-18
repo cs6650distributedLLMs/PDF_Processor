@@ -1,4 +1,8 @@
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { isLocalEnv } from '../core/utils.js';
@@ -15,7 +19,11 @@ const endpoint = isLocalEnv()
  * @param {string} param0.keyPrefix The prefix to use in the S3 key
  * @return void
  */
-export const uploadMediaToS3 = ({ mediaId, body, keyPrefix = 'uploads' }) => {
+export const uploadMediaToStorage = ({
+  mediaId,
+  body,
+  keyPrefix = 'uploads',
+}) => {
   try {
     const upload = new Upload({
       client: new S3Client({
@@ -84,6 +92,32 @@ export const getMediaFile = async (mediaId) => {
 
     const response = await client.send(command);
     return response.Body.transformToByteArray();
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
+
+/**
+ * Deletes a media file from S3.
+ * @param {object} param0 Function parameters
+ * @param {string} param0.mediaId The ID of the media file to delete
+ * @param {string} param0.keyPrefix The prefix to use in the S3 key
+ * @return {Promise<void>}
+ */
+export const deleteMediaFile = async ({ mediaId, keyPrefix = 'uploads' }) => {
+  try {
+    const client = new S3Client({
+      endpoint,
+      region: process.env.AWS_REGION,
+    });
+
+    const command = new DeleteObjectCommand({
+      Bucket: process.env.MEDIA_BUCKET_NAME,
+      Key: `${keyPrefix}/${mediaId}`,
+    });
+
+    await client.send(command);
   } catch (error) {
     console.log(error);
     throw error;
