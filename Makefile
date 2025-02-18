@@ -28,9 +28,11 @@ plan-tf-prod:
 	@cd hummingbird/terraform-state && terraform init && terraform apply -auto-approve
 	@cd hummingbird/terraform && terraform init && terraform plan -var-file='.prd.tfvars'
 
-run-all:
+run-all-local:
+	@make clean-terraform-state
 	@make start
 	@make deploy-tf-local
+	@make localstack-logs
 
 redeploy-image:
 	@cd hummingbird/terraform && tflocal apply -target=module.ecr -auto-approve
