@@ -1,7 +1,7 @@
-import { deleteMedia } from '../../src/clients/dynamodb.js';
-import { deleteMediaFile } from '../../src/clients/s3.js';
+import { deleteMedia } from '../../app/clients/dynamodb.js';
+import { deleteMediaFile } from '../../app/clients/s3.js';
 import { withLogging } from '../common.js';
-import { MEDIA_STATUS } from '../../src/core/constants.js';
+import { MEDIA_STATUS } from '../../app/core/constants.js';
 
 const DELETE_EVENT_TYPE = 'media.v1.delete';
 

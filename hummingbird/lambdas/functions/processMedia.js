@@ -3,9 +3,9 @@ import { getMediaId, withLogging } from '../common.js';
 import {
   setMediaStatus,
   setMediaStatusConditionally,
-} from '../../src/clients/dynamodb.js';
-import { getMediaFile, uploadMediaToStorage } from '../../src/clients/s3.js';
-import { MEDIA_STATUS } from '../../src/core/constants.js';
+} from '../../app/clients/dynamodb.js';
+import { getMediaFile, uploadMediaToStorage } from '../../app/clients/s3.js';
+import { MEDIA_STATUS } from '../../app/core/constants.js';
 
 /**
  * Gets the handler for the processMedia Lambda function.
