@@ -146,7 +146,7 @@ export const deleteController = async (req, res) => {
 
     await publishDeleteMediaEvent(mediaId);
 
-    sendAcceptedResponse(res, { mediaIdToDelete: mediaId });
+    sendAcceptedResponse(res, { mediaId });
   } catch (error) {
     logger.error(error);
     sendErrorResponse(res);

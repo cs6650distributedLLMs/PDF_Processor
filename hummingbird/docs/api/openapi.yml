@@ -1,0 +1,223 @@
+openapi: 3.1.0
+info:
+  title: Hummingbird Media Processing - OpenAPI 3.1
+  description: |-
+    This API is part of a larger project, developed by Weder Ribas during his work in the CS7990 class (Master Thesis) at Northeast University Vancouver.
+    The Hummingbird API provides a simple application that provides users with the ability to upload an image for processing, obtain metadata from this image, and download the processed image.
+
+    Some useful links:
+    - [The thesis code repository](https://github.com/wederribas/cs7990-master-thesis/tree/main)
+
+  contact:
+    email: contact@wederribas.com
+  license:
+    name: GPL-3.0 license
+    url: https://www.gnu.org/licenses/gpl-3.0.en.html$0
+  version: 0.0.1
+servers:
+  - url: http://hummingbird-alb.elb.localhost.localstack.cloud:4566/v1
+tags:
+  - name: media
+    description: Everything about media processing
+  - name: health
+    description: Health check
+paths:
+  /media/upload:
+    post:
+      tags:
+        - media
+      summary: Upload a media file for processing
+      description: Upload a media file for processing. The file will be processed asynchronously and the response will contain the media ID. Use the media ID to check the processing status in the `/media/{mediaId}/status` endpoint.
+      operationId: uploadMedia
+      requestBody:
+        description: Upload a media file for processing
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MediaUpload'
+        required: true
+      responses:
+        '202':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaUploadedResponse'
+        '400':
+          description: Invalid input
+        '413':
+          description: Request entity too large
+        '422':
+          description: Validation exception
+        '500':
+          description: Internal server error
+  /media/{mediaId}/status:
+    get:
+      tags:
+        - media
+      summary: Get the status of a media processing
+      description: Get the status of a media processing. The status can be one PENDING, PROCESSING, ERROR, or COMPLETED.
+      operationId: getMediaStatus
+      parameters:
+        - $ref: '#/components/parameters/mediaId'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [PENDING, PROCESSING, ERROR, COMPLETED]
+        '400':
+          description: Invalid input
+        '404':
+          description: Media not found
+        '500':
+          description: Internal server error
+  /media/{mediaId}:
+    get:
+      tags:
+        - media
+      summary: Get the metadata of a media file
+      description: Get the metadata of a media file.
+      operationId: listMedia
+      parameters:
+        - $ref: '#/components/parameters/mediaId'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Media'
+        '404':
+          description: Media not found
+        '500':
+          description: Internal server error
+    delete:
+      tags:
+        - media
+      summary: Delete a media file
+      description: Delete a media file. The deletion process is asynchronous and the response will contain the media ID.
+      operationId: deleteMedia
+      parameters:
+        - $ref: '#/components/parameters/mediaId'
+      responses:
+        '202':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaUploadedResponse'
+        '404':
+          description: Media not found
+        '500':
+          description: Internal server error
+  /media/{mediaId}/download:
+    get:
+      tags:
+        - media
+      summary: Download a media file
+      description: Download a media file. The file will be downloaded if the processing is completed. If the processing is still in progress, the response will contain a message indicating that the media is still processing. Use the media ID to check the processing status in the `/media/{mediaId}/status` endpoint.
+      operationId: downloadMedia
+      parameters:
+        - $ref: '#/components/parameters/mediaId'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '202':
+          description: Media is still processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaStillProcessingResponse'
+        '404':
+          description: Media not found
+        '500':
+          description: Internal server error
+  /health:
+    get:
+      tags:
+        - health
+      summary: Health check
+      description: Health check
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+        '500':
+          description: Internal server error
+components:
+  schemas:
+    MediaUploadedResponse:
+      type: object
+      properties:
+        mediaId:
+          type: string
+          format: uuid
+          examples: [123e4567-e89b-12d3-a456-426614174000]
+    MediaUpload:
+      type: object
+      properties:
+        media:
+          type: string
+          format: binary
+      required:
+        - media
+    Media:
+      type: object
+      properties:
+        mediaId:
+          type: string
+          format: uuid
+        size:
+          type: integer
+        name:
+          type: string
+          examples: [image.jpg]
+        mimeType:
+          type: string
+          examples: [image/jpeg]
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, ERROR, COMPLETED]
+    MediaStillProcessingResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          examples: ["Media is still processing"]
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          examples: ["ok"]
+        service:
+          type: string
+          examples: ["hummingbird"]
+        timestamp:
+          type: number
+          format: epoch
+          examples: [1739687421781]
+  parameters:
+    mediaId:
+      name: mediaId
+      in: path
+      description: The media ID
+      required: true
+      schema:
+        type: string
+        format: uuid

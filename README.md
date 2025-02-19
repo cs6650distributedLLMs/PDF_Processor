@@ -80,4 +80,14 @@ To start the LocalStack CLI, deploy the infrastructure with Terraform and tail t
 make run-all-local
 ```
 
-Once the deployment is done, you can access the API at: `http://hummingbird-alb.elb.localhost.localstack.cloud:4566`.
+Once the deployment is done, you can access the API at: `http://hummingbird-alb.elb.localhost.localstack.cloud:4566`. Check the API docs section for more information on available endpoints.
+
+To stop the LocalStack CLI and remove the infrastructure, run:
+
+```sh
+make stop
+```
+
+## API Docs
+
+The Hummingbird API documentation is available at [hummingbird/docs/api/openapi.yml](./hummingbird/docs/api/openapi.yml). You can use the [Swagger Editor](https://editor.swagger.io/) to visualize the API documentation.
