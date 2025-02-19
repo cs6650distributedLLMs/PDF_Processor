@@ -2,35 +2,40 @@ import { deleteMedia } from '../../app/clients/dynamodb.js';
 import { deleteMediaFile } from '../../app/clients/s3.js';
 import { withLogging } from '../common.js';
 import { MEDIA_STATUS } from '../../app/core/constants.js';
+import { init as initializeLogger, getLogger } from '../logger.js';
+
+initializeLogger({ serviceName: 'deleteMediaLambda' });
+const logger = getLogger();
 
 const DELETE_EVENT_TYPE = 'media.v1.delete';
 
 const getHandler = () => {
   return async (event, context) => {
-    console.log('deleteMedia');
+    logger.info('Delete media Lambda triggered', { event });
+
     for (const record of event.Records) {
       const body = JSON.parse(record.body);
       const message = JSON.parse(body.Message);
       const type = message.type;
 
       if (type !== DELETE_EVENT_TYPE) {
-        console.log(`Skipping message with type ${type}. Not supported.`);
+        logger.info(`Skipping message with type ${type}. Not supported.`);
         continue;
       }
 
       const mediaId = message.payload?.mediaId;
 
       if (!mediaId) {
-        console.log('Skipping message with no mediaId.');
+        logger.info('Skipping message with no mediaId.');
         continue;
       }
 
-      console.log(`Deleting media with id ${mediaId}.`);
+      logger.info(`Deleting media with id ${mediaId}.`);
 
       const deletedMedia = await deleteMedia(mediaId);
 
       if (!deletedMedia) {
-        console.log(`Media with id ${mediaId} not found.`);
+        logger.info(`Media with id ${mediaId} not found.`);
         continue;
       }
 
@@ -40,7 +45,7 @@ const getHandler = () => {
         await deleteMediaFile({ mediaId, keyPrefix: 'resized' });
       }
 
-      console.log(`Deleted media with id ${mediaId}.`);
+      logger.info(`Deleted media with id ${mediaId}.`);
     }
   };
 };

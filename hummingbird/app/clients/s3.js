@@ -6,6 +6,9 @@ import {
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { isLocalEnv } from '../core/utils.js';
+import { getLogger } from '../logger.js';
+
+const logger = getLogger();
 
 const endpoint = isLocalEnv()
   ? 'http://s3.localhost.localstack.cloud:4566'
@@ -39,7 +42,7 @@ export const uploadMediaToStorage = ({
 
     return upload.done();
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     throw error;
   }
 };
@@ -66,7 +69,7 @@ export const getProcessedMediaUrl = async (mediaId) => {
       expiresIn: ONE_HOUR_IN_SECONDS,
     });
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     throw error;
   }
 };
@@ -93,7 +96,7 @@ export const getMediaFile = async (mediaId) => {
     const response = await client.send(command);
     return response.Body.transformToByteArray();
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     throw error;
   }
 };
@@ -119,7 +122,7 @@ export const deleteMediaFile = async ({ mediaId, keyPrefix = 'uploads' }) => {
 
     await client.send(command);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     throw error;
   }
 };

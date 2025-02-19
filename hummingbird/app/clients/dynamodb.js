@@ -7,6 +7,9 @@ import {
 } from '@aws-sdk/client-dynamodb';
 import { isLocalEnv } from '../core/utils.js';
 import { MEDIA_STATUS } from '../core/constants.js';
+import { getLogger } from '../logger.js';
+
+const logger = getLogger();
 
 const endpoint = isLocalEnv()
   ? 'http://dynamodb.localhost.localstack.cloud:4566'
@@ -43,7 +46,7 @@ export const createMedia = async ({ mediaId, size, name, mimetype }) => {
 
     await client.send(command);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     throw error;
   }
 };
@@ -83,7 +86,7 @@ export const getMedia = async (mediaId) => {
       status: Item.status.S,
     };
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     throw error;
   }
 };
@@ -125,7 +128,7 @@ export const setMediaStatusConditionally = async ({
 
     return await client.send(command);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     throw error;
   }
 };
@@ -158,7 +161,7 @@ export const setMediaStatus = async ({ mediaId, newStatus }) => {
 
     return await client.send(command);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     throw error;
   }
 };
@@ -195,7 +198,7 @@ export const deleteMedia = async (mediaId) => {
       status: Attributes.status.S,
     };
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     throw error;
   }
 };

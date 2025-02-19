@@ -1,6 +1,9 @@
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 import { isLocalEnv } from '../core/utils.js';
 import { EVENTS } from '../core/constants.js';
+import { getLogger } from '../logger.js';
+
+const logger = getLogger();
 
 const endpoint = isLocalEnv()
   ? 'http://sns.localhost.localstack.cloud:4566'
@@ -27,7 +30,7 @@ export const publishEvent = async ({ topicArn, message }) => {
 
     await client.send(command);
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     throw error;
   }
 };

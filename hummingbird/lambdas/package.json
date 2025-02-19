@@ -26,10 +26,12 @@
   "homepage": "https://github.com/wederribas/cs7990-master-thesis#readme",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.2",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.0",
     "rollup": "^4.34.6"
   },
   "dependencies": {
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "winston": "^3.17.0"
   }
 }

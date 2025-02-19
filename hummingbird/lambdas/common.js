@@ -13,12 +13,8 @@ export const withErrorLogging =
 
 export const withEventLogging =
   (handler) =>
-  async (...args) => {
-    console.log('INPUT: ', JSON.stringify(args));
-    const result = await handler(...args);
-    console.log('OUTPUT: ', JSON.stringify(result));
-    return result;
-  };
+  async (...args) =>
+    await handler(...args);
 
 export const withLogging = flow(withEventLogging, withErrorLogging);
 

@@ -6,6 +6,10 @@ import {
 } from '../../app/clients/dynamodb.js';
 import { getMediaFile, uploadMediaToStorage } from '../../app/clients/s3.js';
 import { MEDIA_STATUS } from '../../app/core/constants.js';
+import { init as initializeLogger, getLogger } from '../logger.js';
+
+initializeLogger({ serviceName: 'processMediaLambda' });
+const logger = getLogger();
 
 /**
  * Gets the handler for the processMedia Lambda function.
@@ -44,10 +48,10 @@ const getHandler = () => {
         expectedCurrentStatus: MEDIA_STATUS.PROCESSING,
       });
 
-      console.log(`Resized image ${mediaId}.`);
+      logger.info(`Resized image ${mediaId}.`);
     } catch (err) {
       if (err instanceof ConditionalCheckFailedException) {
-        console.log(
+        logger.error(
           `Media ${mediaId} not found or status is not ${MEDIA_STATUS.PROCESSING}.`
         );
         return;
@@ -58,7 +62,7 @@ const getHandler = () => {
         newStatus: MEDIA_STATUS.ERROR,
       });
 
-      console.log(err);
+      logger.error(err);
       throw err;
     }
   };
