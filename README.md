@@ -24,7 +24,7 @@ Follow the [official LocalStack docs](https://docs.localstack.cloud/getting-star
 
 ## awslocal CLI
 
-This package provides the awslocal command, which is a thin wrapper around the aws command line interface for use with LocalStack.
+The `awslocal` package provides a CLI, which is a thin wrapper around the aws command line interface for use with LocalStack.
 
 Follow the installation guide [here](https://github.com/localstack/awscli-local?tab=readme-ov-file#installation).
 
@@ -44,7 +44,31 @@ To install the tflocal command, you can use pip (assuming you have a local Pytho
 pip install terraform-local
 ```
 
+## Make
+
+For a better local development experience, this repository uses the [GNU Make tool](https://www.gnu.org/software/make).
+
+If you're on Linux, it's likely that you already have `make` installed.
+On MacOs, make sure you have Apple's Command Line Tools installed. It will install make for you.
+For Windows, check [this blog post](https://leangaurav.medium.com/how-to-setup-install-gnu-make-on-windows-324480f1da69) from leangaurav.
+
 # Getting Started
+
+## LocalStack Pro
+
+This project utilizes several AWS services which are only available with a LocalStack Pro subscription. At the time of writing, it's possible to run LocalStack Pro with a Hobbyist subscription.
+
+Before starting the application: obtain an [auth token from LocalStack](https://docs.localstack.cloud/getting-started/auth-token/). Then, create a file named `.env` at the root level in the repository.
+
+```sh
+cp .env.sample .env
+```
+
+Substitute the temporary value `LOCALSTACK_AUTH_TOKEN` in the `.env` file. If the authentication is properly setup, it's possible to access the LocalStack Pro AWS services. Also, when starting the application, the logs will display a message similar to this one:
+
+```
+INFO --- [  MainThread] l.p.c.b.licensingv2        : Successfully activated cached license ...
+```
 
 ## Running on Localhost
 
