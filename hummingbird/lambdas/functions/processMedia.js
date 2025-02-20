@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import { getMediaId, withLogging } from '../common.js';
 import {
   setMediaStatus,
@@ -27,17 +28,18 @@ const getHandler = () => {
     const mediaId = getMediaId(event.Records[0].s3.object.key);
 
     try {
-      await setMediaStatusConditionally({
+      const { name: mediaName } = await setMediaStatusConditionally({
         mediaId,
         newStatus: MEDIA_STATUS.PROCESSING,
         expectedCurrentStatus: MEDIA_STATUS.PENDING,
       });
 
-      const image = await getMediaFile(mediaId);
+      const image = await getMediaFile({ mediaId, mediaName });
       const resizedImage = await resizeImage(image);
 
       await uploadMediaToStorage({
         mediaId,
+        mediaName,
         body: resizedImage,
         keyPrefix: 'resized',
       });

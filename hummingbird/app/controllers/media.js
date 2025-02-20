@@ -108,7 +108,7 @@ export const downloadController = async (req, res) => {
       return;
     }
 
-    const url = await getProcessedMediaUrl(mediaId);
+    const url = await getProcessedMediaUrl({ mediaId, mediaName: media.name });
 
     res.redirect(302, url);
   } catch (error) {

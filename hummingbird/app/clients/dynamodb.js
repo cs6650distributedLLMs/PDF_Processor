@@ -118,6 +118,7 @@ export const setMediaStatusConditionally = async ({
       ':newStatus': { S: newStatus },
       ':expectedCurrentStatus': { S: expectedCurrentStatus },
     },
+    ReturnValues: 'ALL_NEW',
   });
 
   try {
@@ -126,7 +127,15 @@ export const setMediaStatusConditionally = async ({
       region: process.env.AWS_REGION,
     });
 
-    return await client.send(command);
+    const { Attributes } = await client.send(command);
+
+    if (!Attributes) {
+      return null;
+    }
+
+    return {
+      name: Attributes.name.S,
+    };
   } catch (error) {
     logger.error(error);
     throw error;
@@ -138,7 +147,7 @@ export const setMediaStatusConditionally = async ({
  * @param {object} param0 Function parameters
  * @param {string} param0.mediaId The media ID
  * @param {string} param0.newStatus The new status to set
- * @return {Promise<object>}
+ * @return {Promise<void>}
  */
 export const setMediaStatus = async ({ mediaId, newStatus }) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
@@ -159,7 +168,7 @@ export const setMediaStatus = async ({ mediaId, newStatus }) => {
       region: process.env.AWS_REGION,
     });
 
-    return await client.send(command);
+    await client.send(command);
   } catch (error) {
     logger.error(error);
     throw error;
@@ -195,6 +204,7 @@ export const deleteMedia = async (mediaId) => {
     }
 
     return {
+      name: Attributes.name.S,
       status: Attributes.status.S,
     };
   } catch (error) {

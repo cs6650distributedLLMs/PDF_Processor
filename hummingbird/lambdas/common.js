@@ -18,12 +18,18 @@ export const withEventLogging =
 
 export const withLogging = flow(withEventLogging, withErrorLogging);
 
+/**
+ * Extracts the media ID from an S3 key.
+ * An S3 key is in the format `{prefix}/{mediaId}/{mediaName}`
+ * @param {string} s3Key The media S3 key
+ * @return {string} The media ID
+ */
 export const getMediaId = (s3Key) => {
-  const lastSlashIndex = s3Key.lastIndexOf('/');
+  const keyArray = s3Key.split('/');
 
-  if (lastSlashIndex === -1) {
-    return s3Key;
+  if (keyArray.length === 1) {
+    return keyArray[0];
   }
 
-  return s3Key.substring(lastSlashIndex + 1);
+  return keyArray[1];
 };

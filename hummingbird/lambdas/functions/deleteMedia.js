@@ -39,10 +39,14 @@ const getHandler = () => {
         continue;
       }
 
-      await deleteMediaFile({ mediaId });
+      await deleteMediaFile({ mediaId, mediaName: deletedMedia.name });
 
       if (deletedMedia.status === MEDIA_STATUS.COMPLETE) {
-        await deleteMediaFile({ mediaId, keyPrefix: 'resized' });
+        await deleteMediaFile({
+          mediaId,
+          mediaName: deletedMedia.name,
+          keyPrefix: 'resized',
+        });
       }
 
       logger.info(`Deleted media with id ${mediaId}.`);

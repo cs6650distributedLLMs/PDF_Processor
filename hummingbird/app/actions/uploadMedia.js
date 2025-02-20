@@ -75,6 +75,7 @@ export const uploadMedia = async (req) => {
 
           uploadMediaToStorage({
             mediaId,
+            mediaName: file.originalFilename,
             body: this._writeStream,
           })
             .then((data) => {
