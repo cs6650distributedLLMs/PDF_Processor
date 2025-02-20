@@ -10,8 +10,17 @@ variable "aws_region" {
   default     = "us-west-2"
 }
 
+variable "hummingbird_app_port" {
+  description = "Port the application listens on"
+  type        = number
+}
+
 variable "media_s3_bucket_name" {
   description = "S3 bucket for media files"
   type        = string
-  default     = "hummingbird-app-media-bucket"
+}
+
+variable "media_dymamo_table_name" {
+  description = "Name of the DynamoDB table for media metadata"
+  type        = string
 }

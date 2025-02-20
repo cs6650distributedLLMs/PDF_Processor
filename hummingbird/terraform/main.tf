@@ -56,6 +56,7 @@ module "dynamodb" {
   additional_tags         = local.common_tags
   aws_region              = var.aws_region
   vpc_id                  = module.networking.vpc_id
+  dynamodb_table_name     = var.media_dymamo_table_name
   private_route_table_ids = module.networking.private_route_table_ids
 }
 
@@ -77,6 +78,7 @@ module "app" {
 
   source                     = "./modules/app"
   additional_tags            = local.common_tags
+  app_port                   = var.hummingbird_app_port
   aws_region                 = var.aws_region
   dynamodb_table_arn         = module.dynamodb.dynamodb_table_arn
   dynamodb_table_name        = module.dynamodb.dynamodb_table_name

@@ -32,7 +32,7 @@ app.get('/health', (req, res) => {
 
 app.use('/v1/media', mediaRoutes);
 
-const port = process.env.APP_PORT || 9000;
+const port = process.env.APP_PORT;
 
 app.listen(port, () => {
   logger.info(`Example app listening on port ${port}`);

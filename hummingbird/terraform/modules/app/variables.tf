@@ -17,7 +17,6 @@ variable "vpc_id" {
 variable "app_port" {
   description = "Port the application listens on"
   type        = number
-  default     = 9000
 }
 
 variable "ecr_repository_arn" {
