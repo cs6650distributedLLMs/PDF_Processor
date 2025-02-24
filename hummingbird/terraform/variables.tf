@@ -24,3 +24,8 @@ variable "media_dymamo_table_name" {
   description = "Name of the DynamoDB table for media metadata"
   type        = string
 }
+
+variable "lambda_opentelemetry_collector_config_file" {
+  description = "Path to the OpenTelemetry collector configuration file"
+  type        = string
+}

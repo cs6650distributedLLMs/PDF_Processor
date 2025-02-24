@@ -1,7 +1,9 @@
-import { handler as deleteMedia } from './functions/deleteMedia.js';
-import { handler as processMedia } from './functions/processMedia.js';
+const { handler: deleteMedia } = require('./functions/deleteMedia.js');
+const { handler: processMedia } = require('./functions/processMedia.js');
 
-export const handlers = {
+const handlers = {
   deleteMedia,
   processMedia,
 };
+
+module.exports = { handlers };

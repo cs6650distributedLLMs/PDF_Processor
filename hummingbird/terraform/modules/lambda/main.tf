@@ -1,3 +1,5 @@
+data "aws_region" "current" {}
+
 data "aws_iam_policy_document" "assume_role" {
   statement {
     effect = "Allow"
@@ -100,7 +102,7 @@ resource "null_resource" "build_lambda_bundle" {
 
 data "archive_file" "lambda" {
   type        = "zip"
-  source_file = "${path.module}/../../../lambdas/dist/index.mjs"
+  source_dir  = "${path.module}/../../../lambdas/dist/"
   output_path = local.lambda_zip_file
 
   depends_on = [null_resource.build_lambda_bundle]
@@ -149,7 +151,10 @@ resource "aws_iam_role" "delete_media_iam_role" {
 
 resource "aws_lambda_function" "delete_media" {
   depends_on = [aws_lambda_layer_version.sharp_lambda_layer]
-  layers     = [aws_lambda_layer_version.sharp_lambda_layer.arn]
+  layers = [
+    "arn:aws:lambda:${data.aws_region.current.name}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-1:1",
+    aws_lambda_layer_version.sharp_lambda_layer.arn
+  ]
 
   filename         = local.lambda_zip_file
   function_name    = "hummingbird-delete-media-handler"
@@ -157,12 +162,21 @@ resource "aws_lambda_function" "delete_media" {
   handler          = "index.handlers.deleteMedia"
   source_code_hash = data.archive_file.lambda.output_base64sha256
   runtime          = "nodejs22.x"
+  architectures    = [var.lambda_architecture]
   timeout          = 10
+
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
-      MEDIA_BUCKET_NAME         = var.media_s3_bucket_name
-      MEDIA_DYNAMODB_TABLE_NAME = var.dynamodb_table_name
+      AWS_LAMBDA_EXEC_WRAPPER             = "/opt/otel-handler"
+      AWS_REGION                          = data.aws_region.current.name
+      HTTP_PROXY                          = "http://xray.localhost.localstack.cloud:4566"
+      MEDIA_BUCKET_NAME                   = var.media_s3_bucket_name
+      MEDIA_DYNAMODB_TABLE_NAME           = var.dynamodb_table_name
+      OPENTELEMETRY_COLLECTOR_CONFIG_FILE = var.opentelemetry_collector_config_file
     }
   }
 
@@ -190,6 +204,11 @@ resource "aws_cloudwatch_log_group" "delete_media_cw_log_group" {
 resource "aws_iam_role_policy_attachment" "delete_lambda_iam_policy_policy_attachment" {
   role       = aws_iam_role.delete_media_iam_role.name
   policy_arn = aws_iam_policy.lambda_iam_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "delete_lambda_xray_policy_attachment" {
+  role       = aws_iam_role.delete_media_iam_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
 resource "aws_lambda_event_source_mapping" "delete_media_sqs_event_source_mapping" {
@@ -221,7 +240,10 @@ resource "aws_iam_role" "process_media_iam_role" {
 
 resource "aws_lambda_function" "process_media" {
   depends_on = [aws_lambda_layer_version.sharp_lambda_layer]
-  layers     = [aws_lambda_layer_version.sharp_lambda_layer.arn]
+  layers = [
+    "arn:aws:lambda:${data.aws_region.current.name}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-1:1",
+    aws_lambda_layer_version.sharp_lambda_layer.arn
+  ]
 
   filename         = local.lambda_zip_file
   function_name    = "hummingbird-process-media-handler"
@@ -231,14 +253,22 @@ resource "aws_lambda_function" "process_media" {
   runtime          = "nodejs22.x"
   timeout          = 10
 
+  tracing_config {
+    mode = "Active"
+  }
+
   # By having 1769 MB of memory, the function will be able to use 1 vCPU
   # https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html#compute-and-storage
   memory_size = 1769
 
   environment {
     variables = {
-      MEDIA_BUCKET_NAME         = var.media_s3_bucket_name
-      MEDIA_DYNAMODB_TABLE_NAME = var.dynamodb_table_name
+      AWS_LAMBDA_EXEC_WRAPPER             = "/opt/otel-handler"
+      AWS_REGION                          = data.aws_region.current.name
+      HTTP_PROXY                          = "http://xray.localhost.localstack.cloud:4566"
+      MEDIA_BUCKET_NAME                   = var.media_s3_bucket_name
+      MEDIA_DYNAMODB_TABLE_NAME           = var.dynamodb_table_name
+      OPENTELEMETRY_COLLECTOR_CONFIG_FILE = var.opentelemetry_collector_config_file
     }
   }
 
@@ -266,6 +296,11 @@ resource "aws_cloudwatch_log_group" "process_media_cw_log_group" {
 resource "aws_iam_role_policy_attachment" "process_lambda_iam_policy_policy_attachment" {
   role       = aws_iam_role.process_media_iam_role.name
   policy_arn = aws_iam_policy.lambda_iam_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "process_lambda_xray_policy_attachment" {
+  role       = aws_iam_role.process_media_iam_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
 resource "aws_lambda_permission" "allow_bucket" {

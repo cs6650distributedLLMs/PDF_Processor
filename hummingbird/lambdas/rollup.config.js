@@ -1,14 +1,20 @@
-import { nodeResolve } from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import json from '@rollup/plugin-json';
+const { nodeResolve } = require('@rollup/plugin-node-resolve');
+const commonjs = require('@rollup/plugin-commonjs');
+const json = require('@rollup/plugin-json');
+const { zip } = require('lodash');
 
-export default {
+module.exports = {
   input: './index.js',
   output: {
-    file: 'dist/index.mjs',
+    file: 'dist/index.js',
     compact: true,
-    format: 'es',
+    format: 'cjs',
   },
   plugins: [json(), nodeResolve({ preferBuiltins: true }), commonjs()],
-  external: [/@aws-sdk/],
+  external: [
+    '@aws-sdk/client-dynamodb',
+    '@aws-sdk/client-s3',
+    '@aws-sdk/lib-storage',
+    'sharp',
+  ],
 };

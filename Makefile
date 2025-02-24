@@ -16,6 +16,9 @@ deploy-tf-local:
 	@cd hummingbird/terraform-state && tflocal init && tflocal apply -auto-approve
 	@cd hummingbird/terraform && tflocal init && tflocal apply -auto-approve -var-file='.local.tfvars'
 
+destroy-tf-local:
+	@cd hummingbird/terraform && tflocal init && tflocal destroy -auto-approve -var-file='.local.tfvars'
+
 plan-tf-local:
 	@cd hummingbird/terraform-state && tflocal init && tflocal apply -auto-approve
 	@cd hummingbird/terraform && tflocal init && tflocal plan -var-file='.local.tfvars'

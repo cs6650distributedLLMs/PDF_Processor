@@ -1,8 +1,8 @@
-import { deleteMedia } from '../../app/clients/dynamodb.js';
-import { deleteMediaFile } from '../../app/clients/s3.js';
-import { withLogging } from '../common.js';
-import { MEDIA_STATUS } from '../../app/core/constants.js';
-import { init as initializeLogger, getLogger } from '../logger.js';
+const { deleteMedia } = require('../clients/dynamodb.js');
+const { deleteMediaFile } = require('../clients/s3.js');
+const { withLogging } = require('../common.js');
+const { MEDIA_STATUS } = require('../constants.js');
+const { init: initializeLogger, getLogger } = require('../logger.js');
 
 initializeLogger({ serviceName: 'deleteMediaLambda' });
 const logger = getLogger();
@@ -54,4 +54,6 @@ const getHandler = () => {
   };
 };
 
-export const handler = withLogging(getHandler());
+const handler = withLogging(getHandler());
+
+module.exports = { handler };

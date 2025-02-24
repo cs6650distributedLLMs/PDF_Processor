@@ -38,3 +38,14 @@ variable "lambdas_src_path" {
   description = "Path to the directory containing the lambda source code"
   type        = string
 }
+
+variable "lambda_architecture" {
+  description = "Architecture to build the lambda for"
+  type        = string
+  default     = "x86_64"
+}
+
+variable "opentelemetry_collector_config_file" {
+  description = "Path to the OpenTelemetry collector configuration file"
+  type        = string
+}

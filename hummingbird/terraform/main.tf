@@ -99,13 +99,14 @@ module "lambdas" {
     module.media_bucket
   ]
 
-  source                         = "./modules/lambda"
-  additional_tags                = local.common_tags
-  dynamodb_table_arn             = module.dynamodb.dynamodb_table_arn
-  dynamodb_table_name            = module.dynamodb.dynamodb_table_name
-  lambdas_src_path               = "../lambdas"
-  media_bucket_arn               = module.media_bucket.media_bucket_arn
-  media_bucket_id                = module.media_bucket.media_bucket_id
-  media_management_sqs_queue_arn = module.eventing.media_management_sqs_queue_arn
-  media_s3_bucket_name           = var.media_s3_bucket_name
+  source                              = "./modules/lambda"
+  additional_tags                     = local.common_tags
+  dynamodb_table_arn                  = module.dynamodb.dynamodb_table_arn
+  dynamodb_table_name                 = module.dynamodb.dynamodb_table_name
+  lambdas_src_path                    = "../lambdas"
+  media_bucket_arn                    = module.media_bucket.media_bucket_arn
+  media_bucket_id                     = module.media_bucket.media_bucket_id
+  media_management_sqs_queue_arn      = module.eventing.media_management_sqs_queue_arn
+  media_s3_bucket_name                = var.media_s3_bucket_name
+  opentelemetry_collector_config_file = var.lambda_opentelemetry_collector_config_file
 }

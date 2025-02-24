@@ -1,6 +1,6 @@
-import flow from 'lodash/flow.js';
+const flow = require('lodash/flow.js');
 
-export const withErrorLogging =
+const withErrorLogging =
   (handler) =>
   async (...args) => {
     try {
@@ -11,12 +11,12 @@ export const withErrorLogging =
     }
   };
 
-export const withEventLogging =
+const withEventLogging =
   (handler) =>
   async (...args) =>
     await handler(...args);
 
-export const withLogging = flow(withEventLogging, withErrorLogging);
+const withLogging = flow(withEventLogging, withErrorLogging);
 
 /**
  * Extracts the media ID from an S3 key.
@@ -24,7 +24,7 @@ export const withLogging = flow(withEventLogging, withErrorLogging);
  * @param {string} s3Key The media S3 key
  * @return {string} The media ID
  */
-export const getMediaId = (s3Key) => {
+const getMediaId = (s3Key) => {
   const keyArray = s3Key.split('/');
 
   if (keyArray.length === 1) {
@@ -33,3 +33,5 @@ export const getMediaId = (s3Key) => {
 
   return keyArray[1];
 };
+
+module.exports = { withLogging, getMediaId };

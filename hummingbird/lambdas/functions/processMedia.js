@@ -1,13 +1,13 @@
-import sharp from 'sharp';
-import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
-import { getMediaId, withLogging } from '../common.js';
-import {
+const sharp = require('sharp');
+const { ConditionalCheckFailedException } = require('@aws-sdk/client-dynamodb');
+const { getMediaId, withLogging } = require('../common.js');
+const {
   setMediaStatus,
   setMediaStatusConditionally,
-} from '../../app/clients/dynamodb.js';
-import { getMediaFile, uploadMediaToStorage } from '../../app/clients/s3.js';
-import { MEDIA_STATUS } from '../../app/core/constants.js';
-import { init as initializeLogger, getLogger } from '../logger.js';
+} = require('../clients/dynamodb.js');
+const { getMediaFile, uploadMediaToStorage } = require('../clients/s3.js');
+const { MEDIA_STATUS } = require('../constants.js');
+const { init: initializeLogger, getLogger } = require('../logger.js');
 
 initializeLogger({ serviceName: 'processMediaLambda' });
 const logger = getLogger();
@@ -83,4 +83,6 @@ const resizeImage = async (imageBuffer) => {
     .toBuffer();
 };
 
-export const handler = withLogging(getHandler());
+const handler = withLogging(getHandler());
+
+module.exports = { handler };
