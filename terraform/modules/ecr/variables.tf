@@ -16,7 +16,7 @@ variable "ecr_repository_name" {
   default     = "hummingbird-media-ecr-repository"
 }
 
-variable "docker_build_context" {
+variable "hummingbird_app_docker_build_context" {
   description = "Path to the directory containing the Dockerfile"
   type        = string
 }

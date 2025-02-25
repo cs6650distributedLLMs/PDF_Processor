@@ -8,28 +8,28 @@ localstack-logs:
 	@docker logs --follow localstack
 
 clean-terraform-state:
-	@rm -rf hummingbird/terraform-state/.terraform hummingbird/terraform-state/.terraform.lock.hcl
-	@rm -rf hummingbird/terraform-state/terraform.tfstate hummingbird/terraform-state/terraform.tfstate.backup
-	@rm -rf hummingbird/terraform/.terraform hummingbird/terraform/.terraform.lock.hcl
+	@rm -rf terraform-state/.terraform terraform-state/.terraform.lock.hcl
+	@rm -rf terraform-state/terraform.tfstate terraform-state/terraform.tfstate.backup
+	@rm -rf terraform/.terraform terraform/.terraform.lock.hcl
 
 deploy-tf-local:
-	@cd hummingbird/terraform-state && tflocal init && tflocal apply -auto-approve
-	@cd hummingbird/terraform && tflocal init && tflocal apply -auto-approve -var-file='.local.tfvars'
+	@cd terraform-state && tflocal init && tflocal apply -auto-approve
+	@cd terraform && tflocal init && tflocal apply -auto-approve -var-file='.local.tfvars'
 
 destroy-tf-local:
-	@cd hummingbird/terraform && tflocal init && tflocal destroy -auto-approve -var-file='.local.tfvars'
+	@cd terraform && tflocal init && tflocal destroy -auto-approve -var-file='.local.tfvars'
 
 plan-tf-local:
-	@cd hummingbird/terraform-state && tflocal init && tflocal apply -auto-approve
-	@cd hummingbird/terraform && tflocal init && tflocal plan -var-file='.local.tfvars'
+	@cd terraform-state && tflocal init && tflocal apply -auto-approve
+	@cd terraform && tflocal init && tflocal plan -var-file='.local.tfvars'
 
 deploy-tf-prd:
-	@cd hummingbird/terraform-state && terraform init && terraform apply -auto-approve
-	@cd hummingbird/terraform && terraform init && terraform apply -auto-approve -var-file='.prd.tfvars'
+	@cd terraform-state && terraform init && terraform apply -auto-approve
+	@cd terraform && terraform init && terraform apply -auto-approve -var-file='.prd.tfvars'
 
 plan-tf-prod:
-	@cd hummingbird/terraform-state && terraform init && terraform apply -auto-approve
-	@cd hummingbird/terraform && terraform init && terraform plan -var-file='.prd.tfvars'
+	@cd terraform-state && terraform init && terraform apply -auto-approve
+	@cd terraform && terraform init && terraform plan -var-file='.prd.tfvars'
 
 run-all-local:
 	@make clean-terraform-state
@@ -38,7 +38,7 @@ run-all-local:
 	@make localstack-logs
 
 redeploy-image:
-	@cd hummingbird/terraform && tflocal apply -target=module.ecr -auto-approve
+	@cd terraform && tflocal apply -target=module.ecr -auto-approve
 
 list-ecs-services:
 	@awslocal ecs list-services --cluster hummingbird-ecs-cluster

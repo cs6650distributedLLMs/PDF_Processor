@@ -38,10 +38,10 @@ module "media_bucket" {
 }
 
 module "ecr" {
-  source               = "./modules/ecr"
-  additional_tags      = local.common_tags
-  aws_region           = var.aws_region
-  docker_build_context = "../app"
+  source                               = "./modules/ecr"
+  additional_tags                      = local.common_tags
+  aws_region                           = var.aws_region
+  hummingbird_app_docker_build_context = "../hummingbird/app"
 }
 
 module "cloudwatch" {
@@ -103,7 +103,7 @@ module "lambdas" {
   additional_tags                     = local.common_tags
   dynamodb_table_arn                  = module.dynamodb.dynamodb_table_arn
   dynamodb_table_name                 = module.dynamodb.dynamodb_table_name
-  lambdas_src_path                    = "../lambdas"
+  lambdas_src_path                    = "../hummingbird/lambdas"
   media_bucket_arn                    = module.media_bucket.media_bucket_arn
   media_bucket_id                     = module.media_bucket.media_bucket_id
   media_management_sqs_queue_arn      = module.eventing.media_management_sqs_queue_arn

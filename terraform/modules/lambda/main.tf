@@ -75,7 +75,6 @@ resource "aws_iam_policy" "lambda_iam_policy" {
 # Build lambda bundle #
 #######################
 locals {
-  lambda_src_path = "${path.module}/../../../lambdas"
   files_to_hash = setsubtract(
     fileset(var.lambdas_src_path, "**/*"),
     fileset(var.lambdas_src_path, "node_modules/**/*")
@@ -102,7 +101,7 @@ resource "null_resource" "build_lambda_bundle" {
 
 data "archive_file" "lambda" {
   type        = "zip"
-  source_dir  = "${path.module}/../../../lambdas/dist/"
+  source_dir  = "${var.lambdas_src_path}/dist/"
   output_path = local.lambda_zip_file
 
   depends_on = [null_resource.build_lambda_bundle]
