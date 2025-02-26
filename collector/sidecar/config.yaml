@@ -1,0 +1,99 @@
+extensions:
+  health_check:
+
+receivers:
+  awsxray:
+      endpoint: 0.0.0.0:2000
+      transport: udp
+  awsecscontainermetrics:
+    collection_interval: 30s
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:${OTEL_SIDECAR_GRPC_PORT}
+      http:
+        endpoint: 0.0.0.0:${OTEL_SIDECAR_HTTP_PORT}
+
+exporters:
+  awsxray:
+  awsemf/application:
+    namespace: ECS/ApplicationMetrics/Hummingbird
+    log_group_name: '/aws/ecs/hummingbird/metrics'
+  awsemf/container:
+    namespace: 'ECS/ContainerMetrics/OpenTelemetry'
+    log_group_name: '/ecs/containermetrics/opentelemetry'
+  otlp:
+    endpoint: ${OTEL_GATEWAY_HTTP_ENDPOINT}:${OTEL_GATEWAY_HTTP_PORT}
+    sending_queue:
+      queue_size: 2048
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 15
+  batch/traces:
+    timeout: 1s
+    send_batch_size: 50
+  batch/metrics:
+    timeout: 60s
+  filter:
+    # For the sake of simplicity, including a few metrics here.
+    # In a real-world scenario, you would include all the metrics you want to export.
+    # Available metrics: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/awsecscontainermetricsreceiver/README.md#available-metrics
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+          - ecs.task.memory.usage
+          - ecs.task.memory.usage.max
+          - ecs.task.memory.utilized
+          - ecs.task.cpu.usage.total
+          - ecs.task.cpu.utilized
+          - ecs.task.cpu.usage.vcpu
+          - ecs.task.cpu.usage.system
+
+service:
+  pipelines:
+    # Exports application metrics to external observability vendor.
+    metrics/application:
+      receivers: [otlp]
+      processors: [memory_limiter, batch/metrics]
+      exporters: [otlp]
+    # Exports ECS container metrics to external observability vendor.
+    metrics/container:
+      receivers: [awsecscontainermetrics]
+      processors: [memory_limiter, filter, batch/metrics]
+      exporters: [otlp]
+    # Exports application metrics to AWS CloudWatch vendor.
+    metrics/cwapplication:
+      receivers: [otlp]
+      processors: [memory_limiter, batch/metrics]
+      exporters: [awsemf/application]
+    # Exports ECS container metrics to AWS CloudWatch vendor.
+    metrics/cwcontainer:
+      receivers: [awsecscontainermetrics]
+      processors: [memory_limiter, filter, batch/metrics]
+      exporters: [awsemf/container]
+    # Export traces to external observability vendor.
+    traces/general:
+      receivers: [otlp]
+      processors: [memory_limiter, batch/traces]
+      exporters: [otlp]
+    # Export traces to AWS X-Ray.
+    traces/xray:
+      receivers: [otlp, awsxray]
+      processors: [memory_limiter, batch/traces]
+      exporters: [awsxray]
+  extensions: [health_check]
+  telemetry:
+    logs:
+      level: ${OTEL_SIDECAR_LOG_LEVEL}
+      encoding: console
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: '0.0.0.0'
+                port: 8888
