@@ -73,3 +73,8 @@ variable "private_subnet_ids" {
   description = "IDs of the private subnets"
   type        = list(string)
 }
+
+variable "otel_gateway_endpoint" {
+  description = "Endpoint for the OpenTelemetry Gateway Collector"
+  type        = string
+}

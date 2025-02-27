@@ -21,14 +21,16 @@ locals {
     App   = "hummingbird"
     Class = "CS7990"
   }
+  public_subnet_cidrs  = ["10.0.0.0/26", "10.0.0.64/26"]
+  private_subnet_cidrs = ["10.0.0.128/26", "10.0.0.192/26"]
 }
 
 module "networking" {
   source               = "./modules/networking"
   additional_tags      = local.common_tags
   vpc_cidr             = "10.0.0.0/24"
-  public_subnet_cidrs  = ["10.0.0.0/26", "10.0.0.64/26"]
-  private_subnet_cidrs = ["10.0.0.128/26", "10.0.0.192/26"]
+  public_subnet_cidrs  = local.public_subnet_cidrs
+  private_subnet_cidrs = local.private_subnet_cidrs
 }
 
 module "media_bucket" {
@@ -89,13 +91,31 @@ module "eventing" {
   additional_tags = local.common_tags
 }
 
+module "collector" {
+  depends_on = [
+    module.ecr,
+    module.networking
+  ]
+
+  source               = "./modules/collector"
+  additional_tags      = local.common_tags
+  otel_http_port       = 4318
+  aws_region           = var.aws_region
+  ecr_repository_arn   = module.ecr.ecr_repository_arn
+  gateway_image_uri    = module.otel_gateway_docker.image_uri
+  private_subnet_ids   = module.networking.private_subnet_ids
+  private_subnet_cidrs = local.private_subnet_cidrs
+  vpc_id               = module.networking.vpc_id
+}
+
 module "app" {
   depends_on = [
     module.cloudwatch,
     module.dynamodb,
     module.ecr,
     module.media_bucket,
-    module.networking
+    module.networking,
+    module.module.collector
   ]
 
   source                     = "./modules/app"
@@ -114,9 +134,12 @@ module "app" {
   private_subnet_ids         = module.networking.private_subnet_ids
   public_subnet_ids          = module.networking.public_subnet_ids
   vpc_id                     = module.networking.vpc_id
+  otel_gateway_endpoint      = module.collector.alb_dns_name
 }
 
 module "lambdas" {
+  # TODO: explore instrumenting lambdas with Otel. Send telemetry to the gateway collector.
+
   depends_on = [
     module.dynamodb,
     module.media_bucket
