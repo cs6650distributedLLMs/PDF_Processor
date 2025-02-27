@@ -24,7 +24,12 @@ variable "ecr_repository_arn" {
   type        = string
 }
 
-variable "image_uri" {
+variable "hummingbird_image_uri" {
+  description = "URI of the Docker image to run"
+  type        = string
+}
+
+variable "otel_sidecar_image_uri" {
   description = "URI of the Docker image to run"
   type        = string
 }

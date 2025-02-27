@@ -230,7 +230,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   [
     {
       "name": "hummingbird",
-      "image": "${var.image_uri}",
+      "image": "${var.hummingbird_image_uri}",
       "essential": true,
       "environment": [
         {"name": "APP_PORT", "value": "${var.app_port}"},
@@ -253,13 +253,52 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           "awslogs-region": "${var.aws_region}",
           "awslogs-stream-prefix": "ecs"
         }
+      },
+      "dependsOn": [
+        {
+          "containerName": "adot-sidecar-collector",
+          "condition": "START"
+        }
+      ]
+    },
+    {
+      "name": "adot-sidecar-collector",
+      "image": "${var.otel_sidecar_image_uri}",
+      "cpu": 256,
+      "memory": 512,
+      "essential": true,
+      "environment": [
+        {
+          "name": "OTEL_GATEWAY_HTTP_ENDPOINT",
+          "value": "REPLACE_ME"
+        }
+      ],
+      "portMappings": [
+        {
+          "protocol": "tcp",
+          "hostPort": 4318,
+          "containerPort": 4318
+        },
+        {
+          "protocol": "tcp",
+          "hostPort": 4317,
+          "containerPort": 4317
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/hummingbird-otel-sidecar",
+          "awslogs-region": "${var.aws_region}",
+          "awslogs-stream-prefix": "ecs"
+        }
       }
     }
   ]
   TASK_DEFINITION
   network_mode          = "awsvpc"
-  memory                = "512"
-  cpu                   = "256"
+  cpu                   = "1024"
+  memory                = "3072"
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-ecs-task-definition"

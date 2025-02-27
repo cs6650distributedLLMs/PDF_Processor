@@ -105,7 +105,8 @@ module "app" {
   dynamodb_table_arn         = module.dynamodb.dynamodb_table_arn
   dynamodb_table_name        = module.dynamodb.dynamodb_table_name
   ecr_repository_arn         = module.ecr.ecr_repository_arn
-  image_uri                  = module.hummingbird_docker.image_uri
+  hummingbird_image_uri      = module.hummingbird_docker.image_uri
+  otel_sidecar_image_uri     = module.otel_sidecar_docker.image_uri
   media_bucket_arn           = module.media_bucket.media_bucket_arn
   media_management_topic_arn = module.eventing.media_management_topic_arn
   media_s3_bucket_name       = var.media_s3_bucket_name
