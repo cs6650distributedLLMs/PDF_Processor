@@ -20,7 +20,7 @@ receivers:
       memory:
 
 exporters:
-  otlp/grafana_cloud:
+  otlphttp/grafana_cloud:
     endpoint: ${GRAFANA_OTEL_ENDPOINT}
     auth:
       authenticator: basicauth/grafana_cloud
@@ -95,7 +95,7 @@ service:
         transform/drop_unneeded_resource_attributes,
         batch
       ]
-      exporters: [otlp/grafana_cloud, grafanacloud]
+      exporters: [otlphttp/grafana_cloud, grafanacloud]
     metrics:
       receivers: [otlp, hostmetrics]
       processors: [
@@ -105,11 +105,11 @@ service:
         transform/add_resource_attributes_as_metric_attributes,
         batch
       ]
-      exporters: [otlp/grafana_cloud]
+      exporters: [otlphttp/grafana_cloud]
     metrics/grafanacloud:
       receivers: [grafanacloud]
       processors: [batch]
-      exporters: [otlp/grafana_cloud]
+      exporters: [otlphttp/grafana_cloud]
   extensions: [health_check, basicauth/grafana_cloud]
   telemetry:
     logs:
