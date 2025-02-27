@@ -38,10 +38,32 @@ module "media_bucket" {
 }
 
 module "ecr" {
-  source                               = "./modules/ecr"
-  additional_tags                      = local.common_tags
-  aws_region                           = var.aws_region
-  hummingbird_app_docker_build_context = "../hummingbird/app"
+  source          = "./modules/ecr"
+  additional_tags = local.common_tags
+}
+
+module "hummingbird_docker" {
+  source               = "./modules/docker"
+  aws_region           = var.aws_region
+  docker_build_context = "../hummingbird/app"
+  image_tag_prefix     = "hummingbird"
+  ecr_repository_url   = module.ecr.repository_url
+}
+
+module "otel_sidecar_docker" {
+  source               = "./modules/docker"
+  aws_region           = var.aws_region
+  docker_build_context = "../collector/sidecar"
+  image_tag_prefix     = "sidecar"
+  ecr_repository_url   = module.ecr.repository_url
+}
+
+module "otel_gateway_docker" {
+  source               = "./modules/docker"
+  aws_region           = var.aws_region
+  docker_build_context = "../collector/gateway"
+  image_tag_prefix     = "gateway"
+  ecr_repository_url   = module.ecr.repository_url
 }
 
 module "cloudwatch" {
@@ -83,7 +105,7 @@ module "app" {
   dynamodb_table_arn         = module.dynamodb.dynamodb_table_arn
   dynamodb_table_name        = module.dynamodb.dynamodb_table_name
   ecr_repository_arn         = module.ecr.ecr_repository_arn
-  image_uri                  = module.ecr.image_uri
+  image_uri                  = module.hummingbird_docker.image_uri
   media_bucket_arn           = module.media_bucket.media_bucket_arn
   media_management_topic_arn = module.eventing.media_management_topic_arn
   media_s3_bucket_name       = var.media_s3_bucket_name
