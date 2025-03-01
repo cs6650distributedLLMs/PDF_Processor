@@ -98,3 +98,6 @@ layer-content.zip
 
 # Lambda dist files
 hummingbird/lambdas/dist/index.js
+
+# Terraform secret variables
+.secret.tfvars

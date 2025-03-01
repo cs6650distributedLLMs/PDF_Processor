@@ -91,21 +91,31 @@ module "eventing" {
   additional_tags = local.common_tags
 }
 
+module "secrets" {
+  source                = "./modules/secrets"
+  additional_tags       = local.common_tags
+  grafana_cloud_api_key = var.grafana_cloud_api_key
+}
+
 module "collector" {
   depends_on = [
     module.ecr,
-    module.networking
+    module.networking,
+    module.secrets
   ]
 
-  source               = "./modules/collector"
-  additional_tags      = local.common_tags
-  otel_http_port       = 4318
-  aws_region           = var.aws_region
-  ecr_repository_arn   = module.ecr.ecr_repository_arn
-  gateway_image_uri    = module.otel_gateway_docker.image_uri
-  private_subnet_ids   = module.networking.private_subnet_ids
-  private_subnet_cidrs = local.private_subnet_cidrs
-  vpc_id               = module.networking.vpc_id
+  source                     = "./modules/collector"
+  additional_tags            = local.common_tags
+  aws_region                 = var.aws_region
+  ecr_repository_arn         = module.ecr.ecr_repository_arn
+  gateway_image_uri          = module.otel_gateway_docker.image_uri
+  grafana_api_key_secret_arn = module.secrets.grafana_api_key_secret_arn
+  grafana_cloud_instance_id  = var.grafana_cloud_instance_id
+  grafana_otel_endpoint      = var.grafana_otel_endpoint
+  otel_http_port             = 4318
+  private_subnet_cidrs       = local.private_subnet_cidrs
+  private_subnet_ids         = module.networking.private_subnet_ids
+  vpc_id                     = module.networking.vpc_id
 }
 
 module "app" {
@@ -115,7 +125,7 @@ module "app" {
     module.ecr,
     module.media_bucket,
     module.networking,
-    module.module.collector
+    module.collector
   ]
 
   source                     = "./modules/app"

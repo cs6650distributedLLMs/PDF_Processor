@@ -29,3 +29,18 @@ variable "lambda_opentelemetry_collector_config_file" {
   description = "Path to the OpenTelemetry collector configuration file"
   type        = string
 }
+
+variable "grafana_otel_endpoint" {
+  description = "Endpoint for Grafana OpenTelemetry"
+  type        = string
+}
+
+variable "grafana_cloud_instance_id" {
+  description = "Grafana Cloud instance ID"
+  type        = number
+}
+
+variable "grafana_cloud_api_key" {
+  description = "API key for Grafana Cloud"
+  type        = string
+}

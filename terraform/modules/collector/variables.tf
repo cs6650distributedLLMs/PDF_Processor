@@ -38,3 +38,18 @@ variable "private_subnet_cidrs" {
   description = "CIDR blocks for the private subnets"
   type        = list(string)
 }
+
+variable "grafana_api_key_secret_arn" {
+  description = "ARN of the secret containing the Grafana API key"
+  type        = string
+}
+
+variable "grafana_otel_endpoint" {
+  description = "Endpoint for Grafana OpenTelemetry"
+  type        = string
+}
+
+variable "grafana_cloud_instance_id" {
+  description = "Grafana Cloud instance ID"
+  type        = number
+}

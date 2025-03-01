@@ -270,7 +270,11 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "environment": [
         {
           "name": "OTEL_GATEWAY_HTTP_ENDPOINT",
-          "value": "REPLACE_ME"
+          "value": "${var.otel_gateway_endpoint}"
+        },
+        {
+          "name": "OTEL_COLLECTOR_ENV",
+          "value": "${var.otel_collector_env}"
         }
       ],
       "portMappings": [

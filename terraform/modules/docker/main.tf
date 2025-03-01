@@ -34,7 +34,7 @@ resource "null_resource" "build_docker_image" {
 
 resource "null_resource" "login_to_ecr" {
   provisioner "local-exec" {
-    command = "aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${var.ecr_repository_url}"
+    command = "aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${var.ecr_repository_url} 2>&1 >/dev/null"
   }
 }
 

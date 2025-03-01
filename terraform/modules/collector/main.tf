@@ -37,7 +37,7 @@ resource "aws_alb" "alb" {
 }
 
 resource "aws_alb_target_group" "alb_target_group" {
-  name        = "hummingbird-collector-alb-target-group"
+  name        = "hummingbird-collector-alb-tg"
   port        = var.otel_http_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -46,7 +46,7 @@ resource "aws_alb_target_group" "alb_target_group" {
   # TODO: Explore Otel health check
 
   tags = merge(var.additional_tags, {
-    Name = "hummingbird-collector-alb-target-group"
+    Name = "hummingbird-collector-alb-tg"
   })
 }
 
@@ -149,6 +149,15 @@ data "aws_iam_policy_document" "ecs_iam_role_policy" {
     ]
     resources = [var.ecr_repository_arn]
   }
+
+  statement {
+    sid    = "SecretsManager"
+    effect = "Allow"
+    actions = [
+      "secretsmanager:GetSecretValue"
+    ]
+    resources = [var.grafana_api_key_secret_arn]
+  }
 }
 
 resource "aws_iam_role_policy" "ecs_role_policy" {
@@ -183,7 +192,22 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "name": "otel-gateway-collector",
       "image": "${var.gateway_image_uri}",
       "essential": true,
-      "environment": [],
+      "environment": [
+        {
+          "name": "GRAFANA_OTEL_ENDPOINT",
+          "value": "${var.grafana_otel_endpoint}"
+        },
+        {
+          "name": "GRAFANA_CLOUD_INSTANCE_ID",
+          "value": "${var.grafana_cloud_instance_id}"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "GRAFANA_CLOUD_API_KEY",
+          "valueFrom": "${var.grafana_api_key_secret_arn}"
+        }
+      ],
       "portMappings": [
         {
           "protocol": "tcp",

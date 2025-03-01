@@ -10,7 +10,6 @@ ENV OTEL_SIDECAR_HTTP_PORT=4318
 ENV OTEL_GATEWAY_HTTP_PORT=4318
 ENV OTEL_COLLECTOR_DIR_PATH="/opt/aws/aws-otel-collector"
 ENV OTEL_COLLECTOR_BIN_PATH="${OTEL_COLLECTOR_DIR_PATH}/bin/aws-otel-collector"
-ENV OTEL_COLLECTOR_CONFIG_PATH="/collector/config.yaml"
 ENV OTEL_SIDECAR_LOG_LEVEL="INFO"
 
 USER root
@@ -23,6 +22,7 @@ WORKDIR /collector
 
 COPY entrypoint.sh .
 COPY config.yaml .
+COPY config-with-ecs-metrics.yaml .
 
 RUN addgroup -S otel && adduser -S otel -G otel
 RUN chown -R otel:otel /collector

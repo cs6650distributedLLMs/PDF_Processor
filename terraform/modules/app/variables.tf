@@ -78,3 +78,9 @@ variable "otel_gateway_endpoint" {
   description = "Endpoint for the OpenTelemetry Gateway Collector"
   type        = string
 }
+
+variable "otel_collector_env" {
+  description = "Environment for the OpenTelemetry collector"
+  type        = string
+  default     = "localstack"
+}
