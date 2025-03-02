@@ -26,6 +26,10 @@ exporters:
       authenticator: basicauth/grafana_cloud
     sending_queue:
       queue_size: 1024
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
 
 processors:
   memory_limiter:
@@ -95,7 +99,7 @@ service:
         transform/drop_unneeded_resource_attributes,
         batch
       ]
-      exporters: [otlphttp/grafana_cloud, grafanacloud]
+      exporters: [debug, otlphttp/grafana_cloud, grafanacloud]
     metrics:
       receivers: [otlp, hostmetrics]
       processors: [
@@ -105,7 +109,7 @@ service:
         transform/add_resource_attributes_as_metric_attributes,
         batch
       ]
-      exporters: [otlphttp/grafana_cloud]
+      exporters: [debug, otlphttp/grafana_cloud]
     metrics/grafanacloud:
       receivers: [grafanacloud]
       processors: [batch]

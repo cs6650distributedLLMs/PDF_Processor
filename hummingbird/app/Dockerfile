@@ -14,4 +14,4 @@ COPY --chown=node:node . .
 
 EXPOSE 9000
 
-CMD [ "node", "server.js" ]
+CMD [ "node", "--require", "./_instrumentation.js", "server.js" ]

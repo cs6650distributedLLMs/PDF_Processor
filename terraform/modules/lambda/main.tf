@@ -164,18 +164,22 @@ resource "aws_lambda_function" "delete_media" {
   architectures    = [var.lambda_architecture]
   timeout          = 10
 
-  tracing_config {
-    mode = "Active"
+  vpc_config {
+    subnet_ids         = var.private_subnet_ids
+    security_group_ids = [var.delete_media_lambda_sg_id]
   }
 
   environment {
     variables = {
-      AWS_LAMBDA_EXEC_WRAPPER             = "/opt/otel-handler"
-      AWS_REGION                          = data.aws_region.current.name
-      HTTP_PROXY                          = "http://xray.localhost.localstack.cloud:4566"
-      MEDIA_BUCKET_NAME                   = var.media_s3_bucket_name
-      MEDIA_DYNAMODB_TABLE_NAME           = var.dynamodb_table_name
-      OPENTELEMETRY_COLLECTOR_CONFIG_FILE = var.opentelemetry_collector_config_file
+      AWS_LAMBDA_EXEC_WRAPPER    = "/opt/otel-handler"
+      AWS_REGION                 = data.aws_region.current.name
+      MEDIA_BUCKET_NAME          = var.media_s3_bucket_name
+      MEDIA_DYNAMODB_TABLE_NAME  = var.dynamodb_table_name
+      OTEL_GATEWAY_HTTP_ENDPOINT = var.otel_gateway_endpoint
+      OTEL_GATEWAY_HTTP_PORT     = var.otel_gateway_port
+
+      # Reserved environment variable name. Do not change.
+      OPENTELEMETRY_COLLECTOR_CONFIG_URI = var.otel_collector_config_uri
     }
   }
 
@@ -203,11 +207,6 @@ resource "aws_cloudwatch_log_group" "delete_media_cw_log_group" {
 resource "aws_iam_role_policy_attachment" "delete_lambda_iam_policy_policy_attachment" {
   role       = aws_iam_role.delete_media_iam_role.name
   policy_arn = aws_iam_policy.lambda_iam_policy.arn
-}
-
-resource "aws_iam_role_policy_attachment" "delete_lambda_xray_policy_attachment" {
-  role       = aws_iam_role.delete_media_iam_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
 resource "aws_lambda_event_source_mapping" "delete_media_sqs_event_source_mapping" {
@@ -252,22 +251,26 @@ resource "aws_lambda_function" "process_media" {
   runtime          = "nodejs22.x"
   timeout          = 10
 
-  tracing_config {
-    mode = "Active"
-  }
-
   # By having 1769 MB of memory, the function will be able to use 1 vCPU
   # https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html#compute-and-storage
   memory_size = 1769
 
+  vpc_config {
+    subnet_ids         = var.private_subnet_ids
+    security_group_ids = [var.process_media_lambda_sg_id]
+  }
+
   environment {
     variables = {
-      AWS_LAMBDA_EXEC_WRAPPER             = "/opt/otel-handler"
-      AWS_REGION                          = data.aws_region.current.name
-      HTTP_PROXY                          = "http://xray.localhost.localstack.cloud:4566"
-      MEDIA_BUCKET_NAME                   = var.media_s3_bucket_name
-      MEDIA_DYNAMODB_TABLE_NAME           = var.dynamodb_table_name
-      OPENTELEMETRY_COLLECTOR_CONFIG_FILE = var.opentelemetry_collector_config_file
+      AWS_LAMBDA_EXEC_WRAPPER    = "/opt/otel-handler"
+      AWS_REGION                 = data.aws_region.current.name
+      MEDIA_BUCKET_NAME          = var.media_s3_bucket_name
+      MEDIA_DYNAMODB_TABLE_NAME  = var.dynamodb_table_name
+      OTEL_GATEWAY_HTTP_ENDPOINT = var.otel_gateway_endpoint
+      OTEL_GATEWAY_HTTP_PORT     = var.otel_gateway_port
+
+      # Reserved environment variable name. Do not change.
+      OPENTELEMETRY_COLLECTOR_CONFIG_URI = var.otel_collector_config_uri
     }
   }
 
@@ -295,11 +298,6 @@ resource "aws_cloudwatch_log_group" "process_media_cw_log_group" {
 resource "aws_iam_role_policy_attachment" "process_lambda_iam_policy_policy_attachment" {
   role       = aws_iam_role.process_media_iam_role.name
   policy_arn = aws_iam_policy.lambda_iam_policy.arn
-}
-
-resource "aws_iam_role_policy_attachment" "process_lambda_xray_policy_attachment" {
-  role       = aws_iam_role.process_media_iam_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
 
 resource "aws_lambda_permission" "allow_bucket" {

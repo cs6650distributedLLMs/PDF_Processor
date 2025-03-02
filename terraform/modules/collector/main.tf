@@ -1,35 +1,45 @@
-resource "aws_security_group" "alb_security_group" {
-  name        = "hummingbird-collector-alb-security-group"
-  description = "controls access to the ALB"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    description = "Allow HTTP traffic from the OTel exporters"
-    protocol    = "tcp"
-    from_port   = var.otel_http_port
-    to_port     = var.otel_http_port
-    cidr_blocks = var.private_subnet_cidrs
-  }
-
-  egress {
-    description = "Allow all outbound traffic"
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic" {
+  security_group_id = var.alb_sg_id
+  description       = "Allow HTTP traffic from the OTel exporters"
+  from_port         = var.otel_http_port
+  to_port           = var.otel_http_port
+  cidr_ipv4         = var.vpc_cidr
+  ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
-    Name = "hummingbird-collector-alb-security-group"
+    Name = "humminbird-collector-allow-inbound-traffic"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "allow_inboud_process_media_lambda" {
+  security_group_id            = var.alb_sg_id
+  description                  = "Allow traffic from the media processing lambda"
+  ip_protocol                  = -1
+  referenced_security_group_id = var.media_processing_lambda_security_group_id
+
+  tags = merge(var.additional_tags, {
+    Name = "collector-lambda-allow-inbound-traffic"
+  })
+}
+
+resource "aws_vpc_security_group_egress_rule" "allow_alb_outbound_traffic" {
+  security_group_id = var.alb_sg_id
+  description       = "Allow all outbound traffic"
+  from_port         = 0
+  to_port           = 0
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "tcp"
+
+  tags = merge(var.additional_tags, {
+    Name = "humminbird-collector-allow-outbound-traffic"
   })
 }
 
 resource "aws_alb" "alb" {
-  name    = "hummingbird-collector-alb"
-  subnets = var.private_subnet_ids
-  security_groups = [
-    aws_security_group.alb_security_group.id
-  ]
+  name            = "hummingbird-collector-alb"
+  subnets         = var.private_subnet_ids
+  security_groups = [var.alb_sg_id]
+  internal        = true
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-collector-alb"
@@ -75,28 +85,29 @@ resource "aws_ecs_cluster" "ecs_cluster" {
   })
 }
 
-resource "aws_security_group" "container_security_group" {
-  description = "Access to the Fargate containers"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    protocol  = "tcp"
-    from_port = var.otel_http_port
-    to_port   = var.otel_http_port
-    security_groups = [
-      aws_security_group.alb_security_group.id
-    ]
-  }
-
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "allow_container_inbound_traffic" {
+  security_group_id            = var.container_sg_id
+  referenced_security_group_id = var.alb_sg_id
+  description                  = "Allow HTTP traffic from ALB"
+  from_port                    = var.otel_http_port
+  to_port                      = var.otel_http_port
+  ip_protocol                  = "tcp"
 
   tags = merge(var.additional_tags, {
-    Name = "hummingbird-collector-container-security-group"
+    Name = "hummingbird-container-allow-inbound-traffic"
+  })
+}
+
+resource "aws_vpc_security_group_egress_rule" "allow_container_outboung_traffic" {
+  security_group_id = var.container_sg_id
+  description       = "Allow all outbound traffic"
+  from_port         = 0
+  to_port           = 0
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+
+  tags = merge(var.additional_tags, {
+    Name = "humminbird-container-allow-outbound-traffic"
   })
 }
 
@@ -217,9 +228,9 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/hummingbird-otel-collector",
+          "awslogs-group": "${var.collector_log_group_name}",
           "awslogs-region": "${var.aws_region}",
-          "awslogs-stream-prefix": "ecs"
+          "awslogs-stream-prefix": "collector"
         }
       }
     }
@@ -250,9 +261,7 @@ resource "aws_ecs_service" "ecs_service" {
   network_configuration {
     assign_public_ip = false
     subnets          = var.private_subnet_ids
-    security_groups = [
-      aws_security_group.container_security_group.id
-    ]
+    security_groups  = [var.container_sg_id]
   }
 
   depends_on = [

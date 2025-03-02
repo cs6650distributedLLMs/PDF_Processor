@@ -84,3 +84,23 @@ variable "otel_collector_env" {
   type        = string
   default     = "localstack"
 }
+
+variable "app_log_group_name" {
+  description = "Name of the CloudWatch log group for the app container"
+  type        = string
+}
+
+variable "sidecar_log_group_name" {
+  description = "Name of the CloudWatch log group for the OTel sidecar container"
+  type        = string
+}
+
+variable "alb_sg_id" {
+  description = "ID of the security group for the ALB"
+  type        = string
+}
+
+variable "container_sg_id" {
+  description = "ID of the security group for the container"
+  type        = string
+}

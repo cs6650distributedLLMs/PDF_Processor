@@ -21,6 +21,7 @@ locals {
     App   = "hummingbird"
     Class = "CS7990"
   }
+  vpc_cidr             = "10.0.0.0/24"
   public_subnet_cidrs  = ["10.0.0.0/26", "10.0.0.64/26"]
   private_subnet_cidrs = ["10.0.0.128/26", "10.0.0.192/26"]
 }
@@ -28,7 +29,7 @@ locals {
 module "networking" {
   source               = "./modules/networking"
   additional_tags      = local.common_tags
-  vpc_cidr             = "10.0.0.0/24"
+  vpc_cidr             = local.vpc_cidr
   public_subnet_cidrs  = local.public_subnet_cidrs
   private_subnet_cidrs = local.private_subnet_cidrs
 }
@@ -46,7 +47,6 @@ module "ecr" {
 
 module "hummingbird_docker" {
   source               = "./modules/docker"
-  aws_region           = var.aws_region
   docker_build_context = "../hummingbird/app"
   image_tag_prefix     = "hummingbird"
   ecr_repository_url   = module.ecr.repository_url
@@ -54,7 +54,6 @@ module "hummingbird_docker" {
 
 module "otel_sidecar_docker" {
   source               = "./modules/docker"
-  aws_region           = var.aws_region
   docker_build_context = "../collector/sidecar"
   image_tag_prefix     = "sidecar"
   ecr_repository_url   = module.ecr.repository_url
@@ -62,15 +61,75 @@ module "otel_sidecar_docker" {
 
 module "otel_gateway_docker" {
   source               = "./modules/docker"
-  aws_region           = var.aws_region
   docker_build_context = "../collector/gateway"
   image_tag_prefix     = "gateway"
   ecr_repository_url   = module.ecr.repository_url
 }
 
-module "cloudwatch" {
+module "cw_hummingbird_app" {
   source          = "./modules/cloudwatch"
   additional_tags = local.common_tags
+  log_group_name  = "hummingbird-app"
+}
+
+module "cw_hummingbird_sidecar" {
+  source          = "./modules/cloudwatch"
+  additional_tags = local.common_tags
+  log_group_name  = "hummingbird-sidecar"
+}
+
+module "cw_hummingbird_collector" {
+  source          = "./modules/cloudwatch"
+  additional_tags = local.common_tags
+  log_group_name  = "hummingbird-collector"
+}
+
+module "media_process_lambda_sg" {
+  source          = "./modules/security-group"
+  additional_tags = local.common_tags
+  vpc_id          = module.networking.vpc_id
+  name_prefix     = "process-lambda-sg"
+  description     = "Process media lambda function security group"
+}
+
+module "media_delete_lambda_sg" {
+  source          = "./modules/security-group"
+  additional_tags = local.common_tags
+  vpc_id          = module.networking.vpc_id
+  name_prefix     = "delete-lambda-sg"
+  description     = "Delete media lambda function security group"
+}
+
+module "collector_gateway_alb_sg" {
+  source          = "./modules/security-group"
+  additional_tags = local.common_tags
+  vpc_id          = module.networking.vpc_id
+  name_prefix     = "collector-alb-sg"
+  description     = "OTel collector gateway ALB security group"
+}
+
+module "collector_gateway_container_sg" {
+  source          = "./modules/security-group"
+  additional_tags = local.common_tags
+  vpc_id          = module.networking.vpc_id
+  name_prefix     = "collector-container-sg"
+  description     = "OTel collector gateway container security group"
+}
+
+module "app_alb_sg" {
+  source          = "./modules/security-group"
+  additional_tags = local.common_tags
+  vpc_id          = module.networking.vpc_id
+  name_prefix     = "app-alb-sg"
+  description     = "Hummingbird app ALB security group"
+}
+
+module "app_container_sg" {
+  source          = "./modules/security-group"
+  additional_tags = local.common_tags
+  vpc_id          = module.networking.vpc_id
+  name_prefix     = "app-container-sg"
+  description     = "Hummingbird app container security group"
 }
 
 module "dynamodb" {
@@ -104,23 +163,31 @@ module "collector" {
     module.secrets
   ]
 
-  source                     = "./modules/collector"
-  additional_tags            = local.common_tags
-  aws_region                 = var.aws_region
+  source = "./modules/collector"
+
+  vpc_id   = module.networking.vpc_id
+  vpc_cidr = local.vpc_cidr
+
+  additional_tags = local.common_tags
+  aws_region      = var.aws_region
+
   ecr_repository_arn         = module.ecr.ecr_repository_arn
   gateway_image_uri          = module.otel_gateway_docker.image_uri
   grafana_api_key_secret_arn = module.secrets.grafana_api_key_secret_arn
   grafana_cloud_instance_id  = var.grafana_cloud_instance_id
   grafana_otel_endpoint      = var.grafana_otel_endpoint
   otel_http_port             = 4318
-  private_subnet_cidrs       = local.private_subnet_cidrs
-  private_subnet_ids         = module.networking.private_subnet_ids
-  vpc_id                     = module.networking.vpc_id
+
+  alb_sg_id                                 = module.collector_gateway_alb_sg.id
+  container_sg_id                           = module.collector_gateway_container_sg.id
+  private_subnet_ids                        = module.networking.private_subnet_ids
+  media_processing_lambda_security_group_id = module.media_process_lambda_sg.id
+
+  collector_log_group_name = module.cw_hummingbird_collector.log_group_name
 }
 
 module "app" {
   depends_on = [
-    module.cloudwatch,
     module.dynamodb,
     module.ecr,
     module.media_bucket,
@@ -128,41 +195,58 @@ module "app" {
     module.collector
   ]
 
-  source                     = "./modules/app"
-  additional_tags            = local.common_tags
+  source = "./modules/app"
+
+  vpc_id          = module.networking.vpc_id
+  additional_tags = local.common_tags
+  aws_region      = var.aws_region
+
   app_port                   = var.hummingbird_app_port
-  aws_region                 = var.aws_region
   dynamodb_table_arn         = module.dynamodb.dynamodb_table_arn
   dynamodb_table_name        = module.dynamodb.dynamodb_table_name
   ecr_repository_arn         = module.ecr.ecr_repository_arn
   hummingbird_image_uri      = module.hummingbird_docker.image_uri
-  otel_sidecar_image_uri     = module.otel_sidecar_docker.image_uri
   media_bucket_arn           = module.media_bucket.media_bucket_arn
   media_management_topic_arn = module.eventing.media_management_topic_arn
   media_s3_bucket_name       = var.media_s3_bucket_name
   node_env                   = var.node_env
-  private_subnet_ids         = module.networking.private_subnet_ids
-  public_subnet_ids          = module.networking.public_subnet_ids
-  vpc_id                     = module.networking.vpc_id
   otel_gateway_endpoint      = module.collector.alb_dns_name
+  otel_sidecar_image_uri     = module.otel_sidecar_docker.image_uri
+
+
+  alb_sg_id          = module.app_alb_sg.id
+  container_sg_id    = module.app_container_sg.id
+  private_subnet_ids = module.networking.private_subnet_ids
+  public_subnet_ids  = module.networking.public_subnet_ids
+
+  app_log_group_name     = module.cw_hummingbird_app.log_group_name
+  sidecar_log_group_name = module.cw_hummingbird_sidecar.log_group_name
 }
 
 module "lambdas" {
-  # TODO: explore instrumenting lambdas with Otel. Send telemetry to the gateway collector.
-
   depends_on = [
     module.dynamodb,
-    module.media_bucket
+    module.media_bucket,
+    module.networking,
+    module.collector
   ]
 
-  source                              = "./modules/lambda"
-  additional_tags                     = local.common_tags
-  dynamodb_table_arn                  = module.dynamodb.dynamodb_table_arn
-  dynamodb_table_name                 = module.dynamodb.dynamodb_table_name
-  lambdas_src_path                    = "../hummingbird/lambdas"
-  media_bucket_arn                    = module.media_bucket.media_bucket_arn
-  media_bucket_id                     = module.media_bucket.media_bucket_id
-  media_management_sqs_queue_arn      = module.eventing.media_management_sqs_queue_arn
-  media_s3_bucket_name                = var.media_s3_bucket_name
-  opentelemetry_collector_config_file = var.lambda_opentelemetry_collector_config_file
+  source = "./modules/lambda"
+
+  lambdas_src_path = "../hummingbird/lambdas"
+  vpc_id           = module.networking.vpc_id
+  additional_tags  = local.common_tags
+
+  dynamodb_table_arn             = module.dynamodb.dynamodb_table_arn
+  dynamodb_table_name            = module.dynamodb.dynamodb_table_name
+  media_bucket_arn               = module.media_bucket.media_bucket_arn
+  media_bucket_id                = module.media_bucket.media_bucket_id
+  media_management_sqs_queue_arn = module.eventing.media_management_sqs_queue_arn
+  media_s3_bucket_name           = var.media_s3_bucket_name
+  otel_collector_config_uri      = var.lambda_opentelemetry_collector_config_uri
+  otel_gateway_endpoint          = module.collector.alb_dns_name
+
+  private_subnet_ids         = module.networking.private_subnet_ids
+  process_media_lambda_sg_id = module.media_process_lambda_sg.id
+  delete_media_lambda_sg_id  = module.media_delete_lambda_sg.id
 }

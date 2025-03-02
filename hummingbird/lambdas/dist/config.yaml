@@ -7,15 +7,19 @@ receivers:
         endpoint: "localhost:4318"
 
 exporters:
+  # otlphttp:
+  #   endpoint: http://${OTEL_GATEWAY_HTTP_ENDPOINT}:${OTEL_GATEWAY_HTTP_PORT}
+  #   tls:
+  #     insecure: true
+  #     insecure_skip_verify: true
   debug:
-  awsxray:
-    endpoint: http://xray.localhost.localstack.cloud:4566
+    verbosity: detailed
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [awsxray]
+      exporters: [debug]
     metrics:
       receivers: [otlp]
       exporters: [debug]

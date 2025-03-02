@@ -25,7 +25,7 @@ variable "media_dymamo_table_name" {
   type        = string
 }
 
-variable "lambda_opentelemetry_collector_config_file" {
+variable "lambda_opentelemetry_collector_config_uri" {
   description = "Path to the OpenTelemetry collector configuration file"
   type        = string
 }

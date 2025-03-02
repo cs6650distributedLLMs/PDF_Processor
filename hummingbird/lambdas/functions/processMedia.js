@@ -25,6 +25,28 @@ const getHandler = () => {
    * @return {Promise<void>}
    */
   return async (event, context) => {
+    try {
+      const endpoint = process.env.OTEL_GATEWAY_HTTP_ENDPOINT;
+      const port = process.env.OTEL_GATEWAY_HTTP_PORT;
+      const url = `http://${endpoint}:${port}/v1/trace`;
+      logger.info(`Tracing url: ${url}`);
+      const result = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: 'processMedia',
+          event: event,
+          context: context,
+        }),
+      });
+      logger.info('Tracing result', result);
+    } catch (err) {
+      logger.error('Failed to send trace to Otel Gateway', err);
+      console.error(err);
+    }
+
     const mediaId = getMediaId(event.Records[0].s3.object.key);
 
     try {

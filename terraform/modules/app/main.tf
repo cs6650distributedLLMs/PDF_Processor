@@ -1,35 +1,33 @@
-resource "aws_security_group" "alb_security_group" {
-  name        = "hummingbird-alb-security-group"
-  description = "controls access to the ALB"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    description = "Allow HTTP traffic from the internet"
-    protocol    = "tcp"
-    from_port   = 80
-    to_port     = 80
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    description = "Allow all outbound traffic"
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic" {
+  security_group_id = var.alb_sg_id
+  description       = "Allow HTTP traffic from the Internet"
+  from_port         = 80
+  to_port           = 80
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
-    Name = "hummingbird-alb-security-group"
+    Name = "humminbird-alb-allow-inbound-traffic"
+  })
+}
+
+resource "aws_vpc_security_group_egress_rule" "allow_alb_outbound_traffic" {
+  security_group_id = var.alb_sg_id
+  description       = "Allow all outbound traffic"
+  from_port         = 0
+  to_port           = 0
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "tcp"
+
+  tags = merge(var.additional_tags, {
+    Name = "humminbird-alb-allow-outbound-traffic"
   })
 }
 
 resource "aws_alb" "alb" {
-  name    = "hummingbird-alb"
-  subnets = var.public_subnet_ids
-  security_groups = [
-    aws_security_group.alb_security_group.id
-  ]
+  name            = "hummingbird-alb"
+  subnets         = var.public_subnet_ids
+  security_groups = [var.alb_sg_id]
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-alb"
@@ -85,28 +83,29 @@ resource "aws_ecs_cluster" "ecs_cluster" {
   })
 }
 
-resource "aws_security_group" "container_security_group" {
-  description = "Access to the Fargate containers"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    protocol  = "tcp"
-    from_port = var.app_port
-    to_port   = var.app_port
-    security_groups = [
-      aws_security_group.alb_security_group.id
-    ]
-  }
-
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+resource "aws_vpc_security_group_ingress_rule" "allow_container_inbound_traffic" {
+  security_group_id            = var.container_sg_id
+  referenced_security_group_id = var.alb_sg_id
+  description                  = "Allow HTTP traffic from the internet"
+  from_port                    = var.app_port
+  to_port                      = var.app_port
+  ip_protocol                  = "tcp"
 
   tags = merge(var.additional_tags, {
-    Name = "hummingbird-container-security-group"
+    Name = "hummingbird-container-allow-inbound-traffic"
+  })
+}
+
+resource "aws_vpc_security_group_egress_rule" "allow_container_outbound_traffic" {
+  security_group_id = var.container_sg_id
+  description       = "Allow all outbound traffic"
+  from_port         = 0
+  to_port           = 0
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+
+  tags = merge(var.additional_tags, {
+    Name = "humminbird-container-allow-outbound-traffic"
   })
 }
 
@@ -238,7 +237,10 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
         {"name": "MEDIA_BUCKET_NAME", "value": "${var.media_s3_bucket_name}"},
         {"name": "MEDIA_MANAGEMENT_TOPIC_ARN", "value": "${var.media_management_topic_arn}"},
         {"name": "MEDIA_DYNAMODB_TABLE_NAME", "value": "${var.dynamodb_table_name}"},
-        {"name": "NODE_ENV", "value": "${var.node_env}"}
+        {"name": "NODE_ENV", "value": "${var.node_env}"},
+        {"name": "OTEL_EXPORTER_OTLP_ENDPOINT", "value": "http://172.20.0.1:4318"},
+        {"name": "OTEL_LOGS_EXPORTER", "value": "none"},
+        {"name": "OTEL_LOG_LEVEL", "value": "debug"}
       ],
       "portMappings": [
         {
@@ -249,9 +251,9 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/hummingbird",
+          "awslogs-group": "${var.app_log_group_name}",
           "awslogs-region": "${var.aws_region}",
-          "awslogs-stream-prefix": "ecs"
+          "awslogs-stream-prefix": "app"
         }
       },
       "dependsOn": [
@@ -270,7 +272,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "environment": [
         {
           "name": "OTEL_GATEWAY_HTTP_ENDPOINT",
-          "value": "${var.otel_gateway_endpoint}"
+          "value": "http://${var.otel_gateway_endpoint}"
         },
         {
           "name": "OTEL_COLLECTOR_ENV",
@@ -292,9 +294,9 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/hummingbird-otel-sidecar",
+          "awslogs-group": "${var.sidecar_log_group_name}",
           "awslogs-region": "${var.aws_region}",
-          "awslogs-stream-prefix": "ecs"
+          "awslogs-stream-prefix": "sidecar"
         }
       }
     }
@@ -325,9 +327,7 @@ resource "aws_ecs_service" "ecs_service" {
   network_configuration {
     assign_public_ip = false
     subnets          = var.private_subnet_ids
-    security_groups = [
-      aws_security_group.container_security_group.id
-    ]
+    security_groups  = [var.container_sg_id]
   }
 
   depends_on = [

@@ -32,12 +32,6 @@ resource "null_resource" "build_docker_image" {
   }
 }
 
-resource "null_resource" "login_to_ecr" {
-  provisioner "local-exec" {
-    command = "aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${var.ecr_repository_url} 2>&1 >/dev/null"
-  }
-}
-
 resource "null_resource" "push_docker_image" {
   provisioner "local-exec" {
     command = "docker push ${var.ecr_repository_url}:${local.image_tag}"
@@ -47,5 +41,5 @@ resource "null_resource" "push_docker_image" {
     should_trigger_resource = local.source_directory_hash
   }
 
-  depends_on = [null_resource.build_docker_image, null_resource.login_to_ecr]
+  depends_on = [null_resource.build_docker_image]
 }

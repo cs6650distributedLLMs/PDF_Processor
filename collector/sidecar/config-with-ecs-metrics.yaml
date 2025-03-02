@@ -2,9 +2,6 @@ extensions:
   health_check:
 
 receivers:
-  awsxray:
-      endpoint: 0.0.0.0:2000
-      transport: udp
   awsecscontainermetrics:
     collection_interval: 30s
   otlp:
@@ -15,14 +12,7 @@ receivers:
         endpoint: 0.0.0.0:${OTEL_SIDECAR_HTTP_PORT}
 
 exporters:
-  awsxray:
-  awsemf/application:
-    namespace: ECS/ApplicationMetrics/Hummingbird
-    log_group_name: '/aws/ecs/hummingbird/metrics'
-  awsemf/container:
-    namespace: 'ECS/ContainerMetrics/OpenTelemetry'
-    log_group_name: '/ecs/containermetrics/opentelemetry'
-  otlp:
+  otlphttp:
     endpoint: ${OTEL_GATEWAY_HTTP_ENDPOINT}:${OTEL_GATEWAY_HTTP_PORT}
     sending_queue:
       queue_size: 2048
@@ -55,36 +45,18 @@ processors:
 
 service:
   pipelines:
-    # Exports application metrics to external observability vendor.
-    metrics/application:
+    metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch/metrics]
-      exporters: [otlp]
-    # Exports ECS container metrics to external observability vendor.
+      exporters: [otlphttp]
     metrics/container:
       receivers: [awsecscontainermetrics]
       processors: [memory_limiter, filter, batch/metrics]
-      exporters: [otlp]
-    # Exports application metrics to AWS CloudWatch vendor.
-    metrics/cwapplication:
-      receivers: [otlp]
-      processors: [memory_limiter, batch/metrics]
-      exporters: [awsemf/application]
-    # Exports ECS container metrics to AWS CloudWatch vendor.
-    metrics/cwcontainer:
-      receivers: [awsecscontainermetrics]
-      processors: [memory_limiter, filter, batch/metrics]
-      exporters: [awsemf/container]
-    # Export traces to external observability vendor.
-    traces/general:
+      exporters: [otlphttp]
+    traces:
       receivers: [otlp]
       processors: [memory_limiter, batch/traces]
-      exporters: [otlp]
-    # Export traces to AWS X-Ray.
-    traces/xray:
-      receivers: [otlp, awsxray]
-      processors: [memory_limiter, batch/traces]
-      exporters: [awsxray]
+      exporters: [otlphttp]
   extensions: [health_check]
   telemetry:
     logs:
