@@ -8,6 +8,7 @@ terraform {
   }
 
   backend "s3" {
+    region         = "us-west-2"
     bucket         = "hummingbird-terraform-state-bucket"
     key            = "hummingbird/terraform.tfstate"
     dynamodb_table = "hummingbird-terraform-state-lock-table"
@@ -52,13 +53,6 @@ module "hummingbird_docker" {
   ecr_repository_url   = module.ecr.repository_url
 }
 
-module "otel_sidecar_docker" {
-  source               = "./modules/docker"
-  docker_build_context = "../collector/sidecar"
-  image_tag_prefix     = "sidecar"
-  ecr_repository_url   = module.ecr.repository_url
-}
-
 module "otel_gateway_docker" {
   source               = "./modules/docker"
   docker_build_context = "../collector/gateway"
@@ -72,32 +66,10 @@ module "cw_hummingbird_app" {
   log_group_name  = "hummingbird-app"
 }
 
-module "cw_hummingbird_sidecar" {
-  source          = "./modules/cloudwatch"
-  additional_tags = local.common_tags
-  log_group_name  = "hummingbird-sidecar"
-}
-
 module "cw_hummingbird_collector" {
   source          = "./modules/cloudwatch"
   additional_tags = local.common_tags
   log_group_name  = "hummingbird-collector"
-}
-
-module "media_process_lambda_sg" {
-  source          = "./modules/security-group"
-  additional_tags = local.common_tags
-  vpc_id          = module.networking.vpc_id
-  name_prefix     = "process-lambda-sg"
-  description     = "Process media lambda function security group"
-}
-
-module "media_delete_lambda_sg" {
-  source          = "./modules/security-group"
-  additional_tags = local.common_tags
-  vpc_id          = module.networking.vpc_id
-  name_prefix     = "delete-lambda-sg"
-  description     = "Delete media lambda function security group"
 }
 
 module "collector_gateway_alb_sg" {
@@ -176,12 +148,12 @@ module "collector" {
   grafana_api_key_secret_arn = module.secrets.grafana_api_key_secret_arn
   grafana_cloud_instance_id  = var.grafana_cloud_instance_id
   grafana_otel_endpoint      = var.grafana_otel_endpoint
-  otel_http_port             = 4318
+  otel_http_port             = var.otel_http_port
 
-  alb_sg_id                                 = module.collector_gateway_alb_sg.id
-  container_sg_id                           = module.collector_gateway_container_sg.id
-  private_subnet_ids                        = module.networking.private_subnet_ids
-  media_processing_lambda_security_group_id = module.media_process_lambda_sg.id
+  alb_sg_id          = module.collector_gateway_alb_sg.id
+  container_sg_id    = module.collector_gateway_container_sg.id
+  private_subnet_ids = module.networking.private_subnet_ids
+  public_subnet_ids  = module.networking.public_subnet_ids
 
   collector_log_group_name = module.cw_hummingbird_collector.log_group_name
 }
@@ -211,16 +183,13 @@ module "app" {
   media_s3_bucket_name       = var.media_s3_bucket_name
   node_env                   = var.node_env
   otel_gateway_endpoint      = module.collector.alb_dns_name
-  otel_sidecar_image_uri     = module.otel_sidecar_docker.image_uri
-
 
   alb_sg_id          = module.app_alb_sg.id
   container_sg_id    = module.app_container_sg.id
   private_subnet_ids = module.networking.private_subnet_ids
   public_subnet_ids  = module.networking.public_subnet_ids
 
-  app_log_group_name     = module.cw_hummingbird_app.log_group_name
-  sidecar_log_group_name = module.cw_hummingbird_sidecar.log_group_name
+  app_log_group_name = module.cw_hummingbird_app.log_group_name
 }
 
 module "lambdas" {
@@ -234,7 +203,6 @@ module "lambdas" {
   source = "./modules/lambda"
 
   lambdas_src_path = "../hummingbird/lambdas"
-  vpc_id           = module.networking.vpc_id
   additional_tags  = local.common_tags
 
   dynamodb_table_arn             = module.dynamodb.dynamodb_table_arn
@@ -243,10 +211,5 @@ module "lambdas" {
   media_bucket_id                = module.media_bucket.media_bucket_id
   media_management_sqs_queue_arn = module.eventing.media_management_sqs_queue_arn
   media_s3_bucket_name           = var.media_s3_bucket_name
-  otel_collector_config_uri      = var.lambda_opentelemetry_collector_config_uri
   otel_gateway_endpoint          = module.collector.alb_dns_name
-
-  private_subnet_ids         = module.networking.private_subnet_ids
-  process_media_lambda_sg_id = module.media_process_lambda_sg.id
-  delete_media_lambda_sg_id  = module.media_delete_lambda_sg.id
 }

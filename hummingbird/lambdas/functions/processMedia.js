@@ -25,39 +25,26 @@ const getHandler = () => {
    * @return {Promise<void>}
    */
   return async (event, context) => {
-    try {
-      const endpoint = process.env.OTEL_GATEWAY_HTTP_ENDPOINT;
-      const port = process.env.OTEL_GATEWAY_HTTP_PORT;
-      const url = `http://${endpoint}:${port}/v1/trace`;
-      logger.info(`Tracing url: ${url}`);
-      const result = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: 'processMedia',
-          event: event,
-          context: context,
-        }),
-      });
-      logger.info('Tracing result', result);
-    } catch (err) {
-      logger.error('Failed to send trace to Otel Gateway', err);
-      console.error(err);
-    }
-
     const mediaId = getMediaId(event.Records[0].s3.object.key);
 
     try {
+      logger.info(`Processing image ${mediaId}.`);
+
       const { name: mediaName } = await setMediaStatusConditionally({
         mediaId,
         newStatus: MEDIA_STATUS.PROCESSING,
         expectedCurrentStatus: MEDIA_STATUS.PENDING,
       });
 
+      logger.info('Media status set to PROCESSING');
+
       const image = await getMediaFile({ mediaId, mediaName });
+
+      logger.info('Got media file');
+
       const resizedImage = await resizeImage(image);
+
+      logger.info('Resized image');
 
       await uploadMediaToStorage({
         mediaId,
@@ -65,6 +52,8 @@ const getHandler = () => {
         body: resizedImage,
         keyPrefix: 'resized',
       });
+
+      logger.info('Uploaded resized image');
 
       await setMediaStatusConditionally({
         mediaId,
@@ -86,7 +75,7 @@ const getHandler = () => {
         newStatus: MEDIA_STATUS.ERROR,
       });
 
-      logger.error(err);
+      logger.error(`Failed to process media ${mediaId}`, err);
       throw err;
     }
   };

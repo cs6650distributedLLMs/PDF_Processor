@@ -1,28 +1,24 @@
 receivers:
   otlp:
     protocols:
-      grpc:
-        endpoint: "localhost:4317"
       http:
-        endpoint: "localhost:4318"
 
 exporters:
-  # otlphttp:
-  #   endpoint: http://${OTEL_GATEWAY_HTTP_ENDPOINT}:${OTEL_GATEWAY_HTTP_PORT}
-  #   tls:
-  #     insecure: true
-  #     insecure_skip_verify: true
-  debug:
-    verbosity: detailed
+  otlphttp:
+    endpoint: ${OTEL_COLLECTOR_GATEWAY_ENDPOINT}
+    tls:
+      insecure: true
+      insecure_skip_verify: true
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [debug]
+      exporters: [otlphttp]
     metrics:
       receivers: [otlp]
-      exporters: [debug]
+      exporters: [otlphttp]
   telemetry:
-    metrics:
-      address: localhost:8888
+    logs:
+      level: ${OTEL_GATEWAY_LOG_LEVEL}
+      encoding: console 

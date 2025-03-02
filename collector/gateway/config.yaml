@@ -1,9 +1,10 @@
 extensions:
-  health_check:
   basicauth/grafana_cloud:
     client_auth:
       username: "${GRAFANA_CLOUD_INSTANCE_ID}"
       password: "${GRAFANA_CLOUD_API_KEY}"
+  health_check:
+    path: /health
 
 connectors:
   grafanacloud:
@@ -12,7 +13,6 @@ connectors:
 receivers:
   otlp:
     protocols:
-      grpc:
       http:
   hostmetrics:
     scrapers:
@@ -21,15 +21,11 @@ receivers:
 
 exporters:
   otlphttp/grafana_cloud:
-    endpoint: ${GRAFANA_OTEL_ENDPOINT}
+    endpoint: "${GRAFANA_OTEL_ENDPOINT}"
     auth:
       authenticator: basicauth/grafana_cloud
     sending_queue:
       queue_size: 1024
-  debug:
-    verbosity: detailed
-    sampling_initial: 5
-    sampling_thereafter: 200
 
 processors:
   memory_limiter:
@@ -99,7 +95,7 @@ service:
         transform/drop_unneeded_resource_attributes,
         batch
       ]
-      exporters: [debug, otlphttp/grafana_cloud, grafanacloud]
+      exporters: [otlphttp/grafana_cloud, grafanacloud]
     metrics:
       receivers: [otlp, hostmetrics]
       processors: [
@@ -109,7 +105,7 @@ service:
         transform/add_resource_attributes_as_metric_attributes,
         batch
       ]
-      exporters: [debug, otlphttp/grafana_cloud]
+      exporters: [otlphttp/grafana_cloud]
     metrics/grafanacloud:
       receivers: [grafanacloud]
       processors: [batch]
@@ -119,10 +115,4 @@ service:
     logs:
       level: ${OTEL_GATEWAY_LOG_LEVEL}
       encoding: console
-    metrics:
-      readers:
-        - pull:
-            exporter:
-              prometheus:
-                host: '0.0.0.0'
-                port: 8888
+ 

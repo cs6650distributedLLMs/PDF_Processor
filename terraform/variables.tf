@@ -25,11 +25,6 @@ variable "media_dymamo_table_name" {
   type        = string
 }
 
-variable "lambda_opentelemetry_collector_config_uri" {
-  description = "Path to the OpenTelemetry collector configuration file"
-  type        = string
-}
-
 variable "grafana_otel_endpoint" {
   description = "Endpoint for Grafana OpenTelemetry"
   type        = string
@@ -43,4 +38,9 @@ variable "grafana_cloud_instance_id" {
 variable "grafana_cloud_api_key" {
   description = "API key for Grafana Cloud"
   type        = string
+}
+
+variable "otel_http_port" {
+  description = "Port for OpenTelemetry HTTP endpoint"
+  type        = number
 }

@@ -29,11 +29,6 @@ variable "hummingbird_image_uri" {
   type        = string
 }
 
-variable "otel_sidecar_image_uri" {
-  description = "URI of the Docker image to run"
-  type        = string
-}
-
 variable "dynamodb_table_name" {
   description = "Name of the DynamoDB table"
   type        = string
@@ -79,19 +74,8 @@ variable "otel_gateway_endpoint" {
   type        = string
 }
 
-variable "otel_collector_env" {
-  description = "Environment for the OpenTelemetry collector"
-  type        = string
-  default     = "localstack"
-}
-
 variable "app_log_group_name" {
   description = "Name of the CloudWatch log group for the app container"
-  type        = string
-}
-
-variable "sidecar_log_group_name" {
-  description = "Name of the CloudWatch log group for the OTel sidecar container"
   type        = string
 }
 

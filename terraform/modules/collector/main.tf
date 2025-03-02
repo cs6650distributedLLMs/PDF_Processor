@@ -1,9 +1,9 @@
 resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic" {
   security_group_id = var.alb_sg_id
   description       = "Allow HTTP traffic from the OTel exporters"
-  from_port         = var.otel_http_port
-  to_port           = var.otel_http_port
-  cidr_ipv4         = var.vpc_cidr
+  from_port         = 80
+  to_port           = 80
+  cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
@@ -11,22 +11,11 @@ resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic" {
   })
 }
 
-resource "aws_vpc_security_group_ingress_rule" "allow_inboud_process_media_lambda" {
-  security_group_id            = var.alb_sg_id
-  description                  = "Allow traffic from the media processing lambda"
-  ip_protocol                  = -1
-  referenced_security_group_id = var.media_processing_lambda_security_group_id
-
-  tags = merge(var.additional_tags, {
-    Name = "collector-lambda-allow-inbound-traffic"
-  })
-}
-
 resource "aws_vpc_security_group_egress_rule" "allow_alb_outbound_traffic" {
   security_group_id = var.alb_sg_id
   description       = "Allow all outbound traffic"
   from_port         = 0
-  to_port           = 0
+  to_port           = 65535
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "tcp"
 
@@ -37,9 +26,9 @@ resource "aws_vpc_security_group_egress_rule" "allow_alb_outbound_traffic" {
 
 resource "aws_alb" "alb" {
   name            = "hummingbird-collector-alb"
-  subnets         = var.private_subnet_ids
+  subnets         = var.public_subnet_ids
   security_groups = [var.alb_sg_id]
-  internal        = true
+  enable_http2    = false
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-collector-alb"
@@ -53,7 +42,16 @@ resource "aws_alb_target_group" "alb_target_group" {
   vpc_id      = var.vpc_id
   target_type = "ip"
 
-  # TODO: Explore Otel health check
+  health_check {
+    protocol = "HTTP"
+    port     = var.otel_col_health_port
+    path     = "/health"
+
+    interval            = 10
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 4
+  }
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-collector-alb-tg"
@@ -62,12 +60,22 @@ resource "aws_alb_target_group" "alb_target_group" {
 
 resource "aws_alb_listener" "alb_listener" {
   load_balancer_arn = aws_alb.alb.arn
-  port              = var.otel_http_port
+  port              = 80
   protocol          = "HTTP"
 
   default_action {
     target_group_arn = aws_alb_target_group.alb_target_group.arn
     type             = "forward"
+
+    forward {
+      target_group {
+        arn = aws_alb_target_group.alb_target_group.arn
+      }
+      stickiness {
+        enabled  = true
+        duration = 3600
+      }
+    }
   }
 
   depends_on = [aws_alb_target_group.alb_target_group]
@@ -98,11 +106,22 @@ resource "aws_vpc_security_group_ingress_rule" "allow_container_inbound_traffic"
   })
 }
 
+resource "aws_vpc_security_group_ingress_rule" "allow_container_inbound_traffic_health_check" {
+  security_group_id            = var.container_sg_id
+  referenced_security_group_id = var.alb_sg_id
+  description                  = "Allow HTTP traffic from ALB for health check"
+  from_port                    = var.otel_col_health_port
+  to_port                      = var.otel_col_health_port
+  ip_protocol                  = "tcp"
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-container-allow-inbound-traffic-hc"
+  })
+}
+
 resource "aws_vpc_security_group_egress_rule" "allow_container_outboung_traffic" {
   security_group_id = var.container_sg_id
   description       = "Allow all outbound traffic"
-  from_port         = 0
-  to_port           = 0
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"
 
@@ -167,14 +186,8 @@ data "aws_iam_policy_document" "ecs_iam_role_policy" {
     actions = [
       "secretsmanager:GetSecretValue"
     ]
-    resources = [var.grafana_api_key_secret_arn]
+    resources = ["*"]
   }
-}
-
-resource "aws_iam_role_policy" "ecs_role_policy" {
-  name   = "hummingbird-collector-ecs-tasks-iam-role-policy"
-  role   = aws_iam_role.ecs_task_role.id
-  policy = data.aws_iam_policy_document.ecs_iam_role_policy.json
 }
 
 resource "aws_iam_role" "ecs_task_execution_role" {
@@ -184,6 +197,12 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   tags = merge(var.additional_tags, {
     Name = "hummingbird-collector-ecs-task-execution-role"
   })
+}
+
+resource "aws_iam_role_policy" "ecs_role_policy" {
+  name   = "hummingbird-collector-ecs-tasks-iam-role-policy"
+  role   = aws_iam_role.ecs_task_execution_role.id
+  policy = data.aws_iam_policy_document.ecs_iam_role_policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy_attachment" {
@@ -222,9 +241,25 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "portMappings": [
         {
           "protocol": "tcp",
-          "containerPort": ${var.otel_http_port}
+          "containerPort": ${var.otel_http_port},
+          "hostPort": ${var.otel_http_port}
+        },
+        {
+          "protocol": "tcp",
+          "containerPort": ${var.otel_col_health_port},
+          "hostPort": ${var.otel_col_health_port}
         }
       ],
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:${var.otel_col_health_port}/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {

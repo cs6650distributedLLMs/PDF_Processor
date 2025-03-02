@@ -7,11 +7,7 @@ import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 import { ATTR_DEPLOYMENT_ENVIRONMENT_NAME } from '@opentelemetry/semantic-conventions/incubating';
 
-import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
-
 export const init = () => {
-  diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
-
   const sdk = new NodeSDK({
     resource: new Resource({
       [ATTR_SERVICE_NAME]: 'hummingbird',

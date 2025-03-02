@@ -15,7 +15,7 @@ resource "aws_vpc_security_group_egress_rule" "allow_alb_outbound_traffic" {
   security_group_id = var.alb_sg_id
   description       = "Allow all outbound traffic"
   from_port         = 0
-  to_port           = 0
+  to_port           = 65535
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "tcp"
 
@@ -51,7 +51,6 @@ resource "aws_alb_target_group" "alb_target_group" {
     healthy_threshold   = 2
     unhealthy_threshold = 2
   }
-
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-alb-target-group"
@@ -99,8 +98,6 @@ resource "aws_vpc_security_group_ingress_rule" "allow_container_inbound_traffic"
 resource "aws_vpc_security_group_egress_rule" "allow_container_outbound_traffic" {
   security_group_id = var.container_sg_id
   description       = "Allow all outbound traffic"
-  from_port         = 0
-  to_port           = 0
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"
 
@@ -238,7 +235,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
         {"name": "MEDIA_MANAGEMENT_TOPIC_ARN", "value": "${var.media_management_topic_arn}"},
         {"name": "MEDIA_DYNAMODB_TABLE_NAME", "value": "${var.dynamodb_table_name}"},
         {"name": "NODE_ENV", "value": "${var.node_env}"},
-        {"name": "OTEL_EXPORTER_OTLP_ENDPOINT", "value": "http://172.20.0.1:4318"},
+        {"name": "OTEL_EXPORTER_OTLP_ENDPOINT", "value": "http://${var.otel_gateway_endpoint}"},
+        {"name": "OTEL_EXPORTER_OTLP_PROTOCOL", "value": "http/protobuf"},
         {"name": "OTEL_LOGS_EXPORTER", "value": "none"},
         {"name": "OTEL_LOG_LEVEL", "value": "debug"}
       ],
@@ -254,49 +252,6 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           "awslogs-group": "${var.app_log_group_name}",
           "awslogs-region": "${var.aws_region}",
           "awslogs-stream-prefix": "app"
-        }
-      },
-      "dependsOn": [
-        {
-          "containerName": "adot-sidecar-collector",
-          "condition": "START"
-        }
-      ]
-    },
-    {
-      "name": "adot-sidecar-collector",
-      "image": "${var.otel_sidecar_image_uri}",
-      "cpu": 256,
-      "memory": 512,
-      "essential": true,
-      "environment": [
-        {
-          "name": "OTEL_GATEWAY_HTTP_ENDPOINT",
-          "value": "http://${var.otel_gateway_endpoint}"
-        },
-        {
-          "name": "OTEL_COLLECTOR_ENV",
-          "value": "${var.otel_collector_env}"
-        }
-      ],
-      "portMappings": [
-        {
-          "protocol": "tcp",
-          "hostPort": 4318,
-          "containerPort": 4318
-        },
-        {
-          "protocol": "tcp",
-          "hostPort": 4317,
-          "containerPort": 4317
-        }
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "${var.sidecar_log_group_name}",
-          "awslogs-region": "${var.aws_region}",
-          "awslogs-stream-prefix": "sidecar"
         }
       }
     }

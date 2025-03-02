@@ -24,6 +24,12 @@ variable "otel_http_port" {
   type        = number
 }
 
+variable "otel_col_health_port" {
+  description = "Port the collector health check listens on"
+  type        = number
+  default     = 13133
+}
+
 variable "ecr_repository_arn" {
   description = "ARN of the ECR repository"
   type        = string
@@ -32,6 +38,11 @@ variable "ecr_repository_arn" {
 variable "gateway_image_uri" {
   description = "URI of the Docker image to run"
   type        = string
+}
+
+variable "public_subnet_ids" {
+  description = "IDs of the public subnets"
+  type        = list(string)
 }
 
 variable "private_subnet_ids" {
@@ -56,11 +67,6 @@ variable "grafana_cloud_instance_id" {
 
 variable "collector_log_group_name" {
   description = "Name of the CloudWatch log group for the collector"
-  type        = string
-}
-
-variable "media_processing_lambda_security_group_id" {
-  description = "ID of the security group for the media processing lambda"
   type        = string
 }
 

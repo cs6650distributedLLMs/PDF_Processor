@@ -1,5 +1,3 @@
-data "aws_region" "current" {}
-
 data "aws_iam_policy_document" "assume_role" {
   statement {
     effect = "Allow"
@@ -14,6 +12,21 @@ data "aws_iam_policy_document" "assume_role" {
 }
 
 data "aws_iam_policy_document" "lambda_iam_policy_document" {
+  statement {
+    sid    = "EC2Networking"
+    effect = "Allow"
+    actions = [
+      "ec2:AttachNetworkInterface",
+      "ec2:CreateNetworkInterface",
+      "ec2:CreateNetworkInterfacePermission",
+      "ec2:DeleteNetworkInterface",
+      "ec2:DeleteNetworkInterfacePermission",
+      "ec2:Describe*",
+      "ec2:DetachNetworkInterface"
+    ]
+    resources = ["*"]
+  }
+
   statement {
     sid    = "CloudWatchLogs"
     effect = "Allow"
@@ -32,7 +45,8 @@ data "aws_iam_policy_document" "lambda_iam_policy_document" {
     actions = [
       "s3:GetObject",
       "s3:PutObject",
-      "s3:ListBucket"
+      "s3:ListBucket",
+      "s3:DeleteObject"
     ]
     resources = [
       var.media_bucket_arn,
@@ -54,6 +68,17 @@ data "aws_iam_policy_document" "lambda_iam_policy_document" {
       "dynamodb:UpdateItem"
     ]
     resources = [var.dynamodb_table_arn]
+  }
+
+  statement {
+    sid    = "SQS"
+    effect = "Allow"
+    actions = [
+      "sqs:ReceiveMessage",
+      "sqs:DeleteMessage",
+      "sqs:GetQueueAttributes"
+    ]
+    resources = [var.media_management_sqs_queue_arn]
   }
 }
 
@@ -150,10 +175,7 @@ resource "aws_iam_role" "delete_media_iam_role" {
 
 resource "aws_lambda_function" "delete_media" {
   depends_on = [aws_lambda_layer_version.sharp_lambda_layer]
-  layers = [
-    "arn:aws:lambda:${data.aws_region.current.name}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-1:1",
-    aws_lambda_layer_version.sharp_lambda_layer.arn
-  ]
+  layers     = [aws_lambda_layer_version.sharp_lambda_layer.arn]
 
   filename         = local.lambda_zip_file
   function_name    = "hummingbird-delete-media-handler"
@@ -164,22 +186,11 @@ resource "aws_lambda_function" "delete_media" {
   architectures    = [var.lambda_architecture]
   timeout          = 10
 
-  vpc_config {
-    subnet_ids         = var.private_subnet_ids
-    security_group_ids = [var.delete_media_lambda_sg_id]
-  }
-
   environment {
     variables = {
-      AWS_LAMBDA_EXEC_WRAPPER    = "/opt/otel-handler"
-      AWS_REGION                 = data.aws_region.current.name
-      MEDIA_BUCKET_NAME          = var.media_s3_bucket_name
-      MEDIA_DYNAMODB_TABLE_NAME  = var.dynamodb_table_name
-      OTEL_GATEWAY_HTTP_ENDPOINT = var.otel_gateway_endpoint
-      OTEL_GATEWAY_HTTP_PORT     = var.otel_gateway_port
-
-      # Reserved environment variable name. Do not change.
-      OPENTELEMETRY_COLLECTOR_CONFIG_URI = var.otel_collector_config_uri
+      MEDIA_BUCKET_NAME           = var.media_s3_bucket_name
+      MEDIA_DYNAMODB_TABLE_NAME   = var.dynamodb_table_name
+      OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
     }
   }
 
@@ -238,10 +249,7 @@ resource "aws_iam_role" "process_media_iam_role" {
 
 resource "aws_lambda_function" "process_media" {
   depends_on = [aws_lambda_layer_version.sharp_lambda_layer]
-  layers = [
-    "arn:aws:lambda:${data.aws_region.current.name}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-1:1",
-    aws_lambda_layer_version.sharp_lambda_layer.arn
-  ]
+  layers     = [aws_lambda_layer_version.sharp_lambda_layer.arn]
 
   filename         = local.lambda_zip_file
   function_name    = "hummingbird-process-media-handler"
@@ -249,28 +257,17 @@ resource "aws_lambda_function" "process_media" {
   handler          = "index.handlers.processMedia"
   source_code_hash = data.archive_file.lambda.output_base64sha256
   runtime          = "nodejs22.x"
-  timeout          = 10
+  timeout          = 30
 
   # By having 1769 MB of memory, the function will be able to use 1 vCPU
   # https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html#compute-and-storage
   memory_size = 1769
 
-  vpc_config {
-    subnet_ids         = var.private_subnet_ids
-    security_group_ids = [var.process_media_lambda_sg_id]
-  }
-
   environment {
     variables = {
-      AWS_LAMBDA_EXEC_WRAPPER    = "/opt/otel-handler"
-      AWS_REGION                 = data.aws_region.current.name
-      MEDIA_BUCKET_NAME          = var.media_s3_bucket_name
-      MEDIA_DYNAMODB_TABLE_NAME  = var.dynamodb_table_name
-      OTEL_GATEWAY_HTTP_ENDPOINT = var.otel_gateway_endpoint
-      OTEL_GATEWAY_HTTP_PORT     = var.otel_gateway_port
-
-      # Reserved environment variable name. Do not change.
-      OPENTELEMETRY_COLLECTOR_CONFIG_URI = var.otel_collector_config_uri
+      MEDIA_BUCKET_NAME           = var.media_s3_bucket_name
+      MEDIA_DYNAMODB_TABLE_NAME   = var.dynamodb_table_name
+      OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
     }
   }
 
