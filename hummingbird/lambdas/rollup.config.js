@@ -1,7 +1,6 @@
 const { nodeResolve } = require('@rollup/plugin-node-resolve');
 const commonjs = require('@rollup/plugin-commonjs');
 const json = require('@rollup/plugin-json');
-const { zip } = require('lodash');
 
 module.exports = {
   input: './index.js',
@@ -17,4 +16,8 @@ module.exports = {
     '@aws-sdk/lib-storage',
     'sharp',
   ],
+  onwarn(warning, warn) {
+    if (warning.code === 'THIS_IS_UNDEFINED') return;
+    warn(warning);
+  },
 };

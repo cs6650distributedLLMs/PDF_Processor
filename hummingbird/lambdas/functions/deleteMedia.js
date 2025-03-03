@@ -50,6 +50,10 @@ const getHandler = () => {
       }
 
       logger.info(`Deleted media with id ${mediaId}.`);
+
+      logger.info('Flushing OpenTelemetry signals');
+      await global.customInstrumentation.metricReader.forceFlush();
+      await global.customInstrumentation.traceExporter.forceFlush();
     }
   };
 };

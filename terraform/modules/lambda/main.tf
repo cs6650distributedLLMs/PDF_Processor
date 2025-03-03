@@ -147,7 +147,7 @@ resource "null_resource" "build_sharp_lambda_layer" {
 }
 
 locals {
-  layer_content_hash = filesha256("${var.lambdas_src_path}/sharp-layer/layer-content.zip")
+  sharp_layer_content_hash = filesha256("${var.lambdas_src_path}/sharp-layer/layer-content.zip")
 }
 
 resource "aws_lambda_layer_version" "sharp_lambda_layer" {
@@ -155,7 +155,33 @@ resource "aws_lambda_layer_version" "sharp_lambda_layer" {
   filename            = "${var.lambdas_src_path}/sharp-layer/layer-content.zip"
   layer_name          = "humminbird-sharp-lambda-layer"
   compatible_runtimes = ["nodejs22.x"]
-  source_code_hash    = local.layer_content_hash
+  source_code_hash    = local.sharp_layer_content_hash
+}
+
+#######################################
+# Build lambda layer for otel module #
+#######################################
+resource "null_resource" "build_otel_lambda_layer" {
+  provisioner "local-exec" {
+    command     = "sh build-lambda-layer.sh"
+    working_dir = "${var.lambdas_src_path}/otel-layer"
+  }
+
+  triggers = {
+    should_trigger_resource = local.source_directory_hash
+  }
+}
+
+locals {
+  otel_layer_content_hash = filesha256("${var.lambdas_src_path}/otel-layer/layer-content.zip")
+}
+
+resource "aws_lambda_layer_version" "otel_lambda_layer" {
+  depends_on          = [null_resource.build_otel_lambda_layer]
+  filename            = "${var.lambdas_src_path}/otel-layer/layer-content.zip"
+  layer_name          = "humminbird-otel-lambda-layer"
+  compatible_runtimes = ["nodejs22.x"]
+  source_code_hash    = local.otel_layer_content_hash
 }
 
 ########################
@@ -174,8 +200,14 @@ resource "aws_iam_role" "delete_media_iam_role" {
 }
 
 resource "aws_lambda_function" "delete_media" {
-  depends_on = [aws_lambda_layer_version.sharp_lambda_layer]
-  layers     = [aws_lambda_layer_version.sharp_lambda_layer.arn]
+  depends_on = [
+    aws_lambda_layer_version.sharp_lambda_layer,
+    aws_lambda_layer_version.otel_lambda_layer,
+  ]
+  layers = [
+    aws_lambda_layer_version.sharp_lambda_layer.arn,
+    aws_lambda_layer_version.otel_lambda_layer.arn
+  ]
 
   filename         = local.lambda_zip_file
   function_name    = "hummingbird-delete-media-handler"
@@ -188,9 +220,12 @@ resource "aws_lambda_function" "delete_media" {
 
   environment {
     variables = {
-      MEDIA_BUCKET_NAME           = var.media_s3_bucket_name
-      MEDIA_DYNAMODB_TABLE_NAME   = var.dynamodb_table_name
-      OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+      MEDIA_BUCKET_NAME                   = var.media_s3_bucket_name
+      MEDIA_DYNAMODB_TABLE_NAME           = var.dynamodb_table_name
+      NODE_OPTIONS                        = "--require /var/task/instrumentation.js"
+      OTEL_EXPORTER_OTLP_PROTOCOL         = "http/protobuf"
+      OTEL_EXPORTER_OTLP_ENDPOINT         = "http://${var.otel_gateway_endpoint}"
+      OTEL_NODE_DISABLED_INSTRUMENTATIONS = "net,dns"
     }
   }
 
@@ -248,8 +283,14 @@ resource "aws_iam_role" "process_media_iam_role" {
 }
 
 resource "aws_lambda_function" "process_media" {
-  depends_on = [aws_lambda_layer_version.sharp_lambda_layer]
-  layers     = [aws_lambda_layer_version.sharp_lambda_layer.arn]
+  depends_on = [
+    aws_lambda_layer_version.sharp_lambda_layer,
+    aws_lambda_layer_version.otel_lambda_layer,
+  ]
+  layers = [
+    aws_lambda_layer_version.sharp_lambda_layer.arn,
+    aws_lambda_layer_version.otel_lambda_layer.arn
+  ]
 
   filename         = local.lambda_zip_file
   function_name    = "hummingbird-process-media-handler"
@@ -265,9 +306,12 @@ resource "aws_lambda_function" "process_media" {
 
   environment {
     variables = {
-      MEDIA_BUCKET_NAME           = var.media_s3_bucket_name
-      MEDIA_DYNAMODB_TABLE_NAME   = var.dynamodb_table_name
-      OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+      MEDIA_BUCKET_NAME                   = var.media_s3_bucket_name
+      MEDIA_DYNAMODB_TABLE_NAME           = var.dynamodb_table_name
+      NODE_OPTIONS                        = "--require /var/task/instrumentation.js"
+      OTEL_EXPORTER_OTLP_PROTOCOL         = "http/protobuf"
+      OTEL_EXPORTER_OTLP_ENDPOINT         = "http://${var.otel_gateway_endpoint}"
+      OTEL_NODE_DISABLED_INSTRUMENTATIONS = "net,dns"
     }
   }
 
