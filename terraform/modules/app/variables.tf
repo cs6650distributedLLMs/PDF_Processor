@@ -69,13 +69,40 @@ variable "private_subnet_ids" {
   type        = list(string)
 }
 
+variable "otel_sidecar_image_uri" {
+  description = "URI of the Docker image to run"
+  type        = string
+}
+
 variable "otel_gateway_endpoint" {
   description = "Endpoint for the OpenTelemetry Gateway Collector"
   type        = string
 }
 
+variable "otel_collector_env" {
+  description = "Environment for the OpenTelemetry collector"
+  type        = string
+  default     = "localstack"
+}
+
+variable "otel_http_port" {
+  description = "Port the OpenTelemetry collector listens on"
+  type        = number
+}
+
+variable "otel_col_health_port" {
+  description = "Port the collector health check listens on"
+  type        = number
+  default     = 13133
+}
+
 variable "app_log_group_name" {
   description = "Name of the CloudWatch log group for the app container"
+  type        = string
+}
+
+variable "sidecar_log_group_name" {
+  description = "Name of the CloudWatch log group for the OTel sidecar container"
   type        = string
 }
 

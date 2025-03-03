@@ -6,6 +6,7 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 import { ATTR_DEPLOYMENT_ENVIRONMENT_NAME } from '@opentelemetry/semantic-conventions/incubating';
+import { awsEcsDetector } from '@opentelemetry/resource-detector-aws';
 
 export const init = () => {
   const sdk = new NodeSDK({
@@ -13,11 +14,21 @@ export const init = () => {
       [ATTR_SERVICE_NAME]: 'hummingbird',
       [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]: process.env.NODE_ENV,
     }),
+    resourceDetectors: [awsEcsDetector],
     traceExporter: new OTLPTraceExporter(),
     metricReader: new PeriodicExportingMetricReader({
       exporter: new OTLPMetricExporter(),
     }),
-    instrumentations: [getNodeAutoInstrumentations()],
+    instrumentations: [
+      getNodeAutoInstrumentations({
+        '@opentelemetry/instrumentation-dns': {
+          enabled: false,
+        },
+        '@opentelemetry/instrumentation-net': {
+          enabled: false,
+        },
+      }),
+    ],
   });
 
   sdk.start();

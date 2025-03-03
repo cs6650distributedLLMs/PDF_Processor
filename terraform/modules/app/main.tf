@@ -235,7 +235,6 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
         {"name": "MEDIA_MANAGEMENT_TOPIC_ARN", "value": "${var.media_management_topic_arn}"},
         {"name": "MEDIA_DYNAMODB_TABLE_NAME", "value": "${var.dynamodb_table_name}"},
         {"name": "NODE_ENV", "value": "${var.node_env}"},
-        {"name": "OTEL_EXPORTER_OTLP_ENDPOINT", "value": "http://${var.otel_gateway_endpoint}"},
         {"name": "OTEL_EXPORTER_OTLP_PROTOCOL", "value": "http/protobuf"},
         {"name": "OTEL_LOGS_EXPORTER", "value": "none"},
         {"name": "OTEL_LOG_LEVEL", "value": "debug"}
@@ -243,7 +242,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "portMappings": [
         {
           "protocol": "tcp",
-          "containerPort": ${var.app_port}
+          "containerPort": ${var.app_port},
+          "hostPort": ${var.app_port}
         }
       ],
       "logConfiguration": {
@@ -252,6 +252,59 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           "awslogs-group": "${var.app_log_group_name}",
           "awslogs-region": "${var.aws_region}",
           "awslogs-stream-prefix": "app"
+        }
+      },
+      "dependsOn": [
+        {
+          "containerName": "adot-sidecar-collector",
+          "condition": "START"
+        }
+      ]
+    },
+    {
+      "name": "adot-sidecar-collector",
+      "image": "${var.otel_sidecar_image_uri}",
+      "cpu": 256,
+      "memory": 512,
+      "essential": true,
+      "environment": [
+        {
+          "name": "OTEL_GATEWAY_HTTP_ENDPOINT",
+          "value": "http://${var.otel_gateway_endpoint}"
+        },
+        {
+          "name": "OTEL_COLLECTOR_ENV",
+          "value": "${var.otel_collector_env}"
+        }
+      ],
+      "portMappings": [
+        {
+          "protocol": "tcp",
+          "hostPort": ${var.otel_http_port},
+          "containerPort": ${var.otel_http_port}
+        },
+        {
+          "protocol": "tcp",
+          "containerPort": ${var.otel_col_health_port},
+          "hostPort": ${var.otel_col_health_port}
+        }
+      ],
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:${var.otel_col_health_port}/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "${var.sidecar_log_group_name}",
+          "awslogs-region": "${var.aws_region}",
+          "awslogs-stream-prefix": "sidecar"
         }
       }
     }

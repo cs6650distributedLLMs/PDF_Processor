@@ -53,6 +53,13 @@ module "hummingbird_docker" {
   ecr_repository_url   = module.ecr.repository_url
 }
 
+module "otel_sidecar_docker" {
+  source               = "./modules/docker"
+  docker_build_context = "../collector/sidecar"
+  image_tag_prefix     = "sidecar"
+  ecr_repository_url   = module.ecr.repository_url
+}
+
 module "otel_gateway_docker" {
   source               = "./modules/docker"
   docker_build_context = "../collector/gateway"
@@ -64,6 +71,12 @@ module "cw_hummingbird_app" {
   source          = "./modules/cloudwatch"
   additional_tags = local.common_tags
   log_group_name  = "hummingbird-app"
+}
+
+module "cw_hummingbird_sidecar" {
+  source          = "./modules/cloudwatch"
+  additional_tags = local.common_tags
+  log_group_name  = "hummingbird-sidecar"
 }
 
 module "cw_hummingbird_collector" {
@@ -183,13 +196,16 @@ module "app" {
   media_s3_bucket_name       = var.media_s3_bucket_name
   node_env                   = var.node_env
   otel_gateway_endpoint      = module.collector.alb_dns_name
+  otel_sidecar_image_uri     = module.otel_sidecar_docker.image_uri
+  otel_http_port             = var.otel_http_port
 
   alb_sg_id          = module.app_alb_sg.id
   container_sg_id    = module.app_container_sg.id
   private_subnet_ids = module.networking.private_subnet_ids
   public_subnet_ids  = module.networking.public_subnet_ids
 
-  app_log_group_name = module.cw_hummingbird_app.log_group_name
+  app_log_group_name     = module.cw_hummingbird_app.log_group_name
+  sidecar_log_group_name = module.cw_hummingbird_sidecar.log_group_name
 }
 
 module "lambdas" {
