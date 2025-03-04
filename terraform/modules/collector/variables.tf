@@ -79,3 +79,8 @@ variable "container_sg_id" {
   description = "ID of the security group for the container"
   type        = string
 }
+
+variable "desired_task_count" {
+  description = "Initial number of tasks to run"
+  type        = number
+}

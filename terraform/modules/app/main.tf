@@ -324,7 +324,7 @@ resource "aws_ecs_service" "ecs_service" {
   cluster         = aws_ecs_cluster.ecs_cluster.arn
   task_definition = aws_ecs_task_definition.ecs_task_definition.arn
   launch_type     = "FARGATE"
-  desired_count   = 2
+  desired_count   = var.desired_task_count
 
   load_balancer {
     target_group_arn = aws_alb_target_group.alb_target_group.arn

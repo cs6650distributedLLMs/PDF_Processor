@@ -89,7 +89,7 @@ export const uploadMedia = async (req) => {
               mediaName: file.originalFilename,
               body: this._writeStream,
             })
-              .then((data) => {
+              .then(() => {
                 span.setAttribute('file-name', file.originalFilename);
                 form.emit('data', { event: 'done', file });
               })

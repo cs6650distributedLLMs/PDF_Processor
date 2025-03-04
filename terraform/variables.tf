@@ -44,3 +44,8 @@ variable "otel_http_port" {
   description = "Port for OpenTelemetry HTTP endpoint"
   type        = number
 }
+
+variable "desired_task_count" {
+  description = "Number of tasks to run"
+  type        = number
+}

@@ -21,7 +21,7 @@ const endpoint = isLocalEnv()
  * @param {string} param0.mediaName The name of the media file
  * @param {WritableStream|Buffer} param0.writeStream The stream to read the media from
  * @param {string} param0.keyPrefix The prefix to use in the S3 key
- * @return void
+ * @return Promise<CompleteMultipartUploadCommandOutput>
  */
 export const uploadMediaToStorage = ({
   mediaId,

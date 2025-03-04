@@ -156,6 +156,8 @@ module "collector" {
   additional_tags = local.common_tags
   aws_region      = var.aws_region
 
+  desired_task_count = var.desired_task_count
+
   ecr_repository_arn         = module.ecr.ecr_repository_arn
   gateway_image_uri          = module.otel_gateway_docker.image_uri
   grafana_api_key_secret_arn = module.secrets.grafana_api_key_secret_arn
@@ -185,6 +187,8 @@ module "app" {
   vpc_id          = module.networking.vpc_id
   additional_tags = local.common_tags
   aws_region      = var.aws_region
+
+  desired_task_count = var.desired_task_count
 
   app_port                   = var.hummingbird_app_port
   dynamodb_table_arn         = module.dynamodb.dynamodb_table_arn
