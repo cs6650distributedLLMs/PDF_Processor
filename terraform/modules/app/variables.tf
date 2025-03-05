@@ -74,26 +74,40 @@ variable "otel_sidecar_image_uri" {
   type        = string
 }
 
-variable "otel_gateway_endpoint" {
-  description = "Endpoint for the OpenTelemetry Gateway Collector"
+variable "otel_exporter_hostame" {
+  description = "Hostname of the OpenTelemetry exporter"
+  type        = string
+}
+
+variable "otel_grpc_gateway_endpoint" {
+  description = "GRPC endpoint for the OpenTelemetry Gateway Collector"
+  type        = string
+}
+
+variable "otel_http_gateway_endpoint" {
+  description = "HTTP endpoint for the OpenTelemetry Gateway Collector"
   type        = string
 }
 
 variable "otel_collector_env" {
   description = "Environment for the OpenTelemetry collector"
   type        = string
-  default     = "localstack"
 }
 
-variable "otel_http_port" {
-  description = "Port the OpenTelemetry collector listens on"
+variable "otel_sidecar_grpc_port" {
+  description = "GRPC port the OpenTelemetry collector listens on"
+  type        = number
+}
+
+variable "otel_sidecar_http_port" {
+  description = "HTTP port the OpenTelemetry collector listens on"
   type        = number
 }
 
 variable "otel_col_health_port" {
   description = "Port the collector health check listens on"
   type        = number
-  default     = 13133
+  default     = 13134
 }
 
 variable "app_log_group_name" {

@@ -14,13 +14,13 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "vpc_cidr" {
-  description = "IP CIDR block of the VPC"
-  type        = string
+variable "otel_http_port" {
+  description = "Collector's HTTP port."
+  type        = number
 }
 
-variable "otel_http_port" {
-  description = "Port the application listens on"
+variable "otel_grpc_port" {
+  description = "Collector's gRPC port."
   type        = number
 }
 

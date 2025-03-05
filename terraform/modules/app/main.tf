@@ -236,6 +236,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
         {"name": "MEDIA_DYNAMODB_TABLE_NAME", "value": "${var.dynamodb_table_name}"},
         {"name": "NODE_ENV", "value": "${var.node_env}"},
         {"name": "OTEL_EXPORTER_OTLP_PROTOCOL", "value": "http/protobuf"},
+        {"name": "OTEL_EXPORTER_OTLP_ENDPOINT", "value": "http://${var.otel_exporter_hostame}:${var.otel_sidecar_http_port}"},
         {"name": "OTEL_LOGS_EXPORTER", "value": "none"},
         {"name": "OTEL_LOG_LEVEL", "value": "debug"}
       ],
@@ -269,8 +270,20 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "essential": true,
       "environment": [
         {
+          "name": "OTEL_GATEWAY_GRPC_ENDPOINT",
+          "value": "${var.otel_grpc_gateway_endpoint}"
+        },
+        {
           "name": "OTEL_GATEWAY_HTTP_ENDPOINT",
-          "value": "http://${var.otel_gateway_endpoint}"
+          "value": "${var.otel_http_gateway_endpoint}"
+        },
+        {
+          "name": "OTEL_SIDECAR_GRPC_PORT",
+          "value": "${var.otel_sidecar_grpc_port}"
+        },
+        {
+          "name": "OTEL_SIDECAR_HTTP_PORT",
+          "value": "${var.otel_sidecar_http_port}"
         },
         {
           "name": "OTEL_COLLECTOR_ENV",
@@ -280,8 +293,13 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "portMappings": [
         {
           "protocol": "tcp",
-          "hostPort": ${var.otel_http_port},
-          "containerPort": ${var.otel_http_port}
+          "hostPort": ${var.otel_sidecar_grpc_port},
+          "containerPort": ${var.otel_sidecar_grpc_port}
+        },
+        {
+          "protocol": "tcp",
+          "hostPort": ${var.otel_sidecar_http_port},
+          "containerPort": ${var.otel_sidecar_http_port}
         },
         {
           "protocol": "tcp",

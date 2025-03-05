@@ -45,7 +45,7 @@ variable "lambda_architecture" {
   default     = "x86_64"
 }
 
-variable "otel_gateway_endpoint" {
-  description = "OpenTelemetry Gateway endpoint"
+variable "otel_http_gateway_endpoint" {
+  description = "OpenTelemetry HTTP Gateway endpoint"
   type        = string
 }

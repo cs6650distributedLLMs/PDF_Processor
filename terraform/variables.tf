@@ -40,8 +40,33 @@ variable "grafana_cloud_api_key" {
   type        = string
 }
 
+variable "otel_collector_env" {
+  description = "Environment for the OpenTelemetry collector"
+  type        = string
+}
+
+variable "otel_exporter_hostame" {
+  description = "Hostname of the OpenTelemetry exporter"
+  type        = string
+}
+
 variable "otel_http_port" {
   description = "Port for OpenTelemetry HTTP endpoint"
+  type        = number
+}
+
+variable "otel_grpc_port" {
+  description = "Port for OpenTelemetry GRPC endpoint"
+  type        = number
+}
+
+variable "otel_sidecar_http_port" {
+  description = "Port for OpenTelemetry HTTP endpoint in the app sidecar"
+  type        = number
+}
+
+variable "otel_sidecar_grpc_port" {
+  description = "Port for OpenTelemetry GRPC endpoint in the app sidecar"
   type        = number
 }
 

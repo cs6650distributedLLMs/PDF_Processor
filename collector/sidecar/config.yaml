@@ -1,13 +1,24 @@
 extensions:
   health_check:
+    endpoint: "0.0.0.0:13134"
     path: /health
 
 receivers:
   otlp:
     protocols:
+      grpc:
+        endpoint: "0.0.0.0:${OTEL_SIDECAR_GRPC_PORT}"
       http:
+        endpoint: "0.0.0.0:${OTEL_SIDECAR_HTTP_PORT}"
 
 exporters:
+  otlp:
+    endpoint: "${OTEL_GATEWAY_GRPC_ENDPOINT}"
+    tls:
+      insecure: true
+      insecure_skip_verify: true
+    sending_queue:
+      queue_size: 2048
   otlphttp:
     endpoint: "${OTEL_GATEWAY_HTTP_ENDPOINT}"
     tls:
@@ -30,14 +41,14 @@ processors:
 service:
   pipelines:
     metrics:
-      receivers: [otlp]
-      processors: [memory_limiter, batch/metrics]
-      exporters: [otlphttp]
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch/metrics ]
+      exporters: [ otlp, otlphttp ]
     traces:
-      receivers: [otlp]
-      processors: [memory_limiter, batch/traces]
-      exporters: [otlphttp]
-  extensions: [health_check]
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch/traces ]
+      exporters: [ otlp, otlphttp ]
+  extensions: [ health_check ]
   telemetry:
     logs:
       level: ${OTEL_SIDECAR_LOG_LEVEL}

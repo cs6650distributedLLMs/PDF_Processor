@@ -13,6 +13,7 @@ connectors:
 receivers:
   otlp:
     protocols:
+      grpc:
       http:
   hostmetrics:
     scrapers:
@@ -115,4 +116,3 @@ service:
     logs:
       level: ${OTEL_GATEWAY_LOG_LEVEL}
       encoding: console
- 

@@ -22,7 +22,7 @@ COPY config.yaml .
 RUN addgroup -S otel && adduser -S otel -G otel
 RUN chown -R otel:otel /collector
 
-EXPOSE 4318
+EXPOSE 4317 4318
 
 # Health check
 EXPOSE 13133

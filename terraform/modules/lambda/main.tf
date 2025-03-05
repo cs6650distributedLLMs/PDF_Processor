@@ -224,7 +224,7 @@ resource "aws_lambda_function" "delete_media" {
       MEDIA_DYNAMODB_TABLE_NAME           = var.dynamodb_table_name
       NODE_OPTIONS                        = "--require /var/task/instrumentation.js"
       OTEL_EXPORTER_OTLP_PROTOCOL         = "http/protobuf"
-      OTEL_EXPORTER_OTLP_ENDPOINT         = "http://${var.otel_gateway_endpoint}"
+      OTEL_EXPORTER_OTLP_ENDPOINT         = var.otel_http_gateway_endpoint
       OTEL_NODE_DISABLED_INSTRUMENTATIONS = "net,dns"
     }
   }
@@ -310,7 +310,7 @@ resource "aws_lambda_function" "process_media" {
       MEDIA_DYNAMODB_TABLE_NAME           = var.dynamodb_table_name
       NODE_OPTIONS                        = "--require /var/task/instrumentation.js"
       OTEL_EXPORTER_OTLP_PROTOCOL         = "http/protobuf"
-      OTEL_EXPORTER_OTLP_ENDPOINT         = "http://${var.otel_gateway_endpoint}"
+      OTEL_EXPORTER_OTLP_ENDPOINT         = var.otel_http_gateway_endpoint
       OTEL_NODE_DISABLED_INSTRUMENTATIONS = "net,dns"
     }
   }

@@ -1,13 +1,26 @@
-resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic" {
+resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_grpc" {
   security_group_id = var.alb_sg_id
-  description       = "Allow HTTP traffic from the OTel exporters"
-  from_port         = 80
-  to_port           = 80
+  description       = "Allow GRPC traffic from the OTel exporters"
+  from_port         = var.otel_grpc_port
+  to_port           = var.otel_grpc_port
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-collector-allow-inbound-traffic"
+    Name = "humminbird-collector-allow-inbound-traffic-grpc"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_http" {
+  security_group_id = var.alb_sg_id
+  description       = "Allow HTTP traffic from the OTel exporters"
+  from_port         = var.otel_http_port
+  to_port           = var.otel_http_port
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "tcp"
+
+  tags = merge(var.additional_tags, {
+    Name = "humminbird-collector-allow-inbound-traffic-http"
   })
 }
 
@@ -35,8 +48,59 @@ resource "aws_alb" "alb" {
   })
 }
 
-resource "aws_alb_target_group" "alb_target_group" {
-  name        = "hummingbird-collector-alb-tg"
+resource "aws_alb_target_group" "alb_grpc_target_group" {
+  name             = "hummingbird-col-alb-grpc-tg"
+  port             = var.otel_grpc_port
+  protocol         = "HTTP"
+  protocol_version = "GRPC"
+  vpc_id           = var.vpc_id
+  target_type      = "ip"
+
+  health_check {
+    protocol = "HTTP"
+    port     = var.otel_col_health_port
+    path     = "/health"
+
+    interval            = 10
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 4
+  }
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-collector-alb-grpc-tg"
+  })
+}
+
+resource "aws_alb_listener" "alb_grpc_listener" {
+  load_balancer_arn = aws_alb.alb.arn
+  port              = var.otel_grpc_port
+  protocol          = "HTTP"
+
+  default_action {
+    target_group_arn = aws_alb_target_group.alb_grpc_target_group.arn
+    type             = "forward"
+
+    forward {
+      target_group {
+        arn = aws_alb_target_group.alb_grpc_target_group.arn
+      }
+      stickiness {
+        enabled  = true
+        duration = 3600
+      }
+    }
+  }
+
+  depends_on = [aws_alb_target_group.alb_grpc_target_group]
+
+  tags = merge(var.additional_tags, {
+    Name = "hummingbird-collector-alb-grpc-listener"
+  })
+}
+
+resource "aws_alb_target_group" "alb_http_target_group" {
+  name        = "hummingbird-col-alb-http-tg"
   port        = var.otel_http_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -54,22 +118,22 @@ resource "aws_alb_target_group" "alb_target_group" {
   }
 
   tags = merge(var.additional_tags, {
-    Name = "hummingbird-collector-alb-tg"
+    Name = "hummingbird-collector-alb-http-tg"
   })
 }
 
-resource "aws_alb_listener" "alb_listener" {
+resource "aws_alb_listener" "alb_http_listener" {
   load_balancer_arn = aws_alb.alb.arn
-  port              = 80
+  port              = var.otel_http_port
   protocol          = "HTTP"
 
   default_action {
-    target_group_arn = aws_alb_target_group.alb_target_group.arn
+    target_group_arn = aws_alb_target_group.alb_http_target_group.arn
     type             = "forward"
 
     forward {
       target_group {
-        arn = aws_alb_target_group.alb_target_group.arn
+        arn = aws_alb_target_group.alb_http_target_group.arn
       }
       stickiness {
         enabled  = true
@@ -78,10 +142,10 @@ resource "aws_alb_listener" "alb_listener" {
     }
   }
 
-  depends_on = [aws_alb_target_group.alb_target_group]
+  depends_on = [aws_alb_target_group.alb_http_target_group]
 
   tags = merge(var.additional_tags, {
-    Name = "hummingbird-collector-alb-listener"
+    Name = "hummingbird-collector-alb-http-listener"
   })
 }
 
@@ -96,8 +160,8 @@ resource "aws_ecs_cluster" "ecs_cluster" {
 resource "aws_vpc_security_group_ingress_rule" "allow_container_inbound_traffic" {
   security_group_id            = var.container_sg_id
   referenced_security_group_id = var.alb_sg_id
-  description                  = "Allow HTTP traffic from ALB"
-  from_port                    = var.otel_http_port
+  description                  = "Allow HTTP and GRPC traffic from ALB"
+  from_port                    = var.otel_grpc_port
   to_port                      = var.otel_http_port
   ip_protocol                  = "tcp"
 
@@ -119,7 +183,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_container_inbound_traffic_
   })
 }
 
-resource "aws_vpc_security_group_egress_rule" "allow_container_outboung_traffic" {
+resource "aws_vpc_security_group_egress_rule" "allow_container_outbound_traffic" {
   security_group_id = var.container_sg_id
   description       = "Allow all outbound traffic"
   cidr_ipv4         = "0.0.0.0/0"
@@ -241,6 +305,11 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "portMappings": [
         {
           "protocol": "tcp",
+          "containerPort": ${var.otel_grpc_port},
+          "hostPort": ${var.otel_grpc_port}
+        },
+        {
+          "protocol": "tcp",
           "containerPort": ${var.otel_http_port},
           "hostPort": ${var.otel_http_port}
         },
@@ -288,7 +357,13 @@ resource "aws_ecs_service" "ecs_service" {
   desired_count   = var.desired_task_count
 
   load_balancer {
-    target_group_arn = aws_alb_target_group.alb_target_group.arn
+    target_group_arn = aws_alb_target_group.alb_grpc_target_group.arn
+    container_name   = "otel-gateway-collector"
+    container_port   = var.otel_grpc_port
+  }
+
+  load_balancer {
+    target_group_arn = aws_alb_target_group.alb_http_target_group.arn
     container_name   = "otel-gateway-collector"
     container_port   = var.otel_http_port
   }
@@ -302,7 +377,8 @@ resource "aws_ecs_service" "ecs_service" {
   depends_on = [
     aws_ecs_cluster.ecs_cluster,
     aws_ecs_task_definition.ecs_task_definition,
-    aws_alb_target_group.alb_target_group
+    aws_alb_target_group.alb_grpc_target_group,
+    aws_alb_target_group.alb_http_target_group
   ]
 
   tags = merge(var.additional_tags, {
