@@ -6,6 +6,13 @@ import { uploadMediaToStorage } from '../clients/s3.js';
 import { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS } from '../core/constants.js';
 
 const tracer = opentelemetry.trace.getTracer('hummingbird-media-upload');
+const meter = opentelemetry.metrics.getMeter('hummingbird-media-upload');
+const successesCounter = meter.createCounter('media.upload.success', {
+  description: 'Number of successful media uploads',
+});
+const failuresCounter = meter.createCounter('media.upload.failure', {
+  description: 'Number of failed media uploads',
+});
 
 /**
  * Uploads a media file to AWS S3 in a streaming fashion.
@@ -58,15 +65,6 @@ export const uploadMedia = async (req) => {
           }
         });
 
-        form.on('error', (error) => {
-          span.setStatus({
-            code: opentelemetry.SpanStatusCode.ERROR,
-            message: error.message,
-          });
-          span.end();
-          reject(error);
-        });
-
         form.on('fileBegin', (name, file) => {
           /*
            * Override the default file.open and file.end functions.
@@ -107,10 +105,23 @@ export const uploadMedia = async (req) => {
           };
         });
 
+        form.on('error', (error) => {
+          failuresCounter.add(1);
+          span.setStatus({
+            code: opentelemetry.SpanStatusCode.ERROR,
+            message: error.message,
+          });
+          span.end();
+
+          reject(error);
+        });
+
         form.on('data', (data) => {
           if (data.event === 'done') {
+            successesCounter.add(1);
             span.setStatus({ code: opentelemetry.SpanStatusCode.OK });
             span.end();
+
             resolve({ mediaId, file: data.file.toJSON() });
           }
         });
