@@ -3,8 +3,8 @@ data "aws_region" "current" {}
 resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_grpc" {
   security_group_id = var.alb_sg_id
   description       = "Allow GRPC traffic from the OTel exporters"
-  from_port         = var.otel_grpc_port
-  to_port           = var.otel_grpc_port
+  from_port         = var.otel_gateway_grpc_port
+  to_port           = var.otel_gateway_grpc_port
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "tcp"
 
@@ -16,8 +16,8 @@ resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_grpc" 
 resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_http" {
   security_group_id = var.alb_sg_id
   description       = "Allow HTTP traffic from the OTel exporters"
-  from_port         = var.otel_http_port
-  to_port           = var.otel_http_port
+  from_port         = var.otel_gateway_http_port
+  to_port           = var.otel_gateway_http_port
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "tcp"
 
@@ -52,7 +52,7 @@ resource "aws_alb" "alb" {
 
 resource "aws_alb_target_group" "alb_grpc_target_group" {
   name             = "hummingbird-col-alb-grpc-tg"
-  port             = var.otel_grpc_port
+  port             = var.otel_gateway_grpc_port
   protocol         = "HTTP"
   protocol_version = "GRPC"
   vpc_id           = var.vpc_id
@@ -60,7 +60,7 @@ resource "aws_alb_target_group" "alb_grpc_target_group" {
 
   health_check {
     protocol = "HTTP"
-    port     = var.otel_col_health_port
+    port     = var.otel_gateway_health_port
     path     = "/health"
 
     interval            = 10
@@ -76,7 +76,7 @@ resource "aws_alb_target_group" "alb_grpc_target_group" {
 
 resource "aws_alb_listener" "alb_grpc_listener" {
   load_balancer_arn = aws_alb.alb.arn
-  port              = var.otel_grpc_port
+  port              = var.otel_gateway_grpc_port
   protocol          = "HTTP"
 
   default_action {
@@ -103,14 +103,14 @@ resource "aws_alb_listener" "alb_grpc_listener" {
 
 resource "aws_alb_target_group" "alb_http_target_group" {
   name        = "hummingbird-col-alb-http-tg"
-  port        = var.otel_http_port
+  port        = var.otel_gateway_http_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
     protocol = "HTTP"
-    port     = var.otel_col_health_port
+    port     = var.otel_gateway_health_port
     path     = "/health"
 
     interval            = 10
@@ -126,7 +126,7 @@ resource "aws_alb_target_group" "alb_http_target_group" {
 
 resource "aws_alb_listener" "alb_http_listener" {
   load_balancer_arn = aws_alb.alb.arn
-  port              = var.otel_http_port
+  port              = var.otel_gateway_http_port
   protocol          = "HTTP"
 
   default_action {
@@ -163,8 +163,8 @@ resource "aws_vpc_security_group_ingress_rule" "allow_container_inbound_traffic"
   security_group_id            = var.container_sg_id
   referenced_security_group_id = var.alb_sg_id
   description                  = "Allow HTTP and GRPC traffic from ALB"
-  from_port                    = var.otel_grpc_port
-  to_port                      = var.otel_http_port
+  from_port                    = var.otel_gateway_grpc_port
+  to_port                      = var.otel_gateway_http_port
   ip_protocol                  = "tcp"
 
   tags = merge(var.additional_tags, {
@@ -176,8 +176,8 @@ resource "aws_vpc_security_group_ingress_rule" "allow_container_inbound_traffic_
   security_group_id            = var.container_sg_id
   referenced_security_group_id = var.alb_sg_id
   description                  = "Allow HTTP traffic from ALB for health check"
-  from_port                    = var.otel_col_health_port
-  to_port                      = var.otel_col_health_port
+  from_port                    = var.otel_gateway_health_port
+  to_port                      = var.otel_gateway_health_port
   ip_protocol                  = "tcp"
 
   tags = merge(var.additional_tags, {
@@ -296,6 +296,18 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
         {
           "name": "GRAFANA_CLOUD_INSTANCE_ID",
           "value": "${var.grafana_cloud_instance_id}"
+        },
+        {
+          "name": "OTEL_GATEWAY_GRPC_PORT",
+          "value": "${var.otel_gateway_grpc_port}"
+        },
+        {
+          "name": "OTEL_GATEWAY_HTTP_PORT",
+          "value": "${var.otel_gateway_http_port}"
+        },
+        {
+          "name": "OTEL_GATEWAY_HEALTH_PORT",
+          "value": "${var.otel_gateway_health_port}"
         }
       ],
       "secrets": [
@@ -307,24 +319,24 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "portMappings": [
         {
           "protocol": "tcp",
-          "containerPort": ${var.otel_grpc_port},
-          "hostPort": ${var.otel_grpc_port}
+          "containerPort": ${var.otel_gateway_grpc_port},
+          "hostPort": ${var.otel_gateway_grpc_port}
         },
         {
           "protocol": "tcp",
-          "containerPort": ${var.otel_http_port},
-          "hostPort": ${var.otel_http_port}
+          "containerPort": ${var.otel_gateway_http_port},
+          "hostPort": ${var.otel_gateway_http_port}
         },
         {
           "protocol": "tcp",
-          "containerPort": ${var.otel_col_health_port},
-          "hostPort": ${var.otel_col_health_port}
+          "containerPort": ${var.otel_gateway_health_port},
+          "hostPort": ${var.otel_gateway_health_port}
         }
       ],
       "healthCheck": {
         "command": [
           "CMD-SHELL",
-          "curl -f http://localhost:${var.otel_col_health_port}/health || exit 1"
+          "curl -f http://localhost:${var.otel_gateway_health_port}/health || exit 1"
         ],
         "interval": 30,
         "timeout": 5,
@@ -361,13 +373,13 @@ resource "aws_ecs_service" "ecs_service" {
   load_balancer {
     target_group_arn = aws_alb_target_group.alb_grpc_target_group.arn
     container_name   = "otel-gateway-collector"
-    container_port   = var.otel_grpc_port
+    container_port   = var.otel_gateway_grpc_port
   }
 
   load_balancer {
     target_group_arn = aws_alb_target_group.alb_http_target_group.arn
     container_name   = "otel-gateway-collector"
-    container_port   = var.otel_http_port
+    container_port   = var.otel_gateway_http_port
   }
 
   network_configuration {

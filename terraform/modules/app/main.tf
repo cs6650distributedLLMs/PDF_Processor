@@ -288,6 +288,10 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           "value": "${var.otel_sidecar_http_port}"
         },
         {
+          "name": "OTEL_SIDECAR_HEALTH_PORT",
+          "value": "${var.otel_sidecar_health_port}"
+        },
+        {
           "name": "OTEL_COLLECTOR_ENV",
           "value": "${var.otel_collector_env}"
         }
@@ -305,14 +309,14 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
         },
         {
           "protocol": "tcp",
-          "containerPort": ${var.otel_col_health_port},
-          "hostPort": ${var.otel_col_health_port}
+          "containerPort": ${var.otel_sidecar_health_port},
+          "hostPort": ${var.otel_sidecar_health_port}
         }
       ],
       "healthCheck": {
         "command": [
           "CMD-SHELL",
-          "curl -f http://localhost:${var.otel_col_health_port}/health || exit 1"
+          "curl -f http://localhost:${var.otel_sidecar_health_port}/health || exit 1"
         ],
         "interval": 30,
         "timeout": 5,

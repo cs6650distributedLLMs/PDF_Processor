@@ -1,20 +1,23 @@
 extensions:
+  health_check:
+    endpoint: "localhost:${OTEL_GATEWAY_HEALTH_PORT}"
+    path: /health
   basicauth/grafana_cloud:
     client_auth:
       username: "${GRAFANA_CLOUD_INSTANCE_ID}"
       password: "${GRAFANA_CLOUD_API_KEY}"
-  health_check:
-    path: /health
 
 connectors:
   grafanacloud:
-    host_identifiers: ["host.name"]
+    host_identifiers: [ "host.name" ]
 
 receivers:
   otlp:
     protocols:
       grpc:
+        endpoint: "localhost:${OTEL_GATEWAY_GRPC_PORT}"
       http:
+        endpoint: "localhost:${OTEL_GATEWAY_HTTP_PORT}"
   hostmetrics:
     scrapers:
       load:
@@ -38,7 +41,7 @@ processors:
     send_batch_size: 8192
     send_batch_max_size: 8192
   resourcedetection:
-    detectors: ["env", "system"]
+    detectors: [ "env", "system" ]
     override: false
   transform/drop_unneeded_resource_attributes:
     error_mode: ignore
@@ -89,16 +92,16 @@ processors:
 service:
   pipelines:
     traces:
-      receivers: [otlp]
+      receivers: [ otlp ]
       processors: [
         memory_limiter,
         resourcedetection,
         transform/drop_unneeded_resource_attributes,
         batch
       ]
-      exporters: [otlphttp/grafana_cloud, grafanacloud]
+      exporters: [ otlphttp/grafana_cloud, grafanacloud ]
     metrics:
-      receivers: [otlp, hostmetrics]
+      receivers: [ otlp, hostmetrics ]
       processors: [
         memory_limiter,
         resourcedetection,
@@ -106,12 +109,12 @@ service:
         transform/add_resource_attributes_as_metric_attributes,
         batch
       ]
-      exporters: [otlphttp/grafana_cloud]
+      exporters: [ otlphttp/grafana_cloud ]
     metrics/grafanacloud:
-      receivers: [grafanacloud]
-      processors: [batch]
-      exporters: [otlphttp/grafana_cloud]
-  extensions: [health_check, basicauth/grafana_cloud]
+      receivers: [ grafanacloud ]
+      processors: [ batch ]
+      exporters: [ otlphttp/grafana_cloud ]
+  extensions: [ health_check, basicauth/grafana_cloud ]
   telemetry:
     logs:
       level: ${OTEL_GATEWAY_LOG_LEVEL}

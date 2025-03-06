@@ -9,20 +9,19 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "otel_http_port" {
+variable "otel_gateway_http_port" {
   description = "Collector's HTTP port."
   type        = number
 }
 
-variable "otel_grpc_port" {
+variable "otel_gateway_grpc_port" {
   description = "Collector's gRPC port."
   type        = number
 }
 
-variable "otel_col_health_port" {
-  description = "Port the collector health check listens on"
+variable "otel_gateway_health_port" {
+  description = "Port for OpenTelemetry Gateway health check"
   type        = number
-  default     = 13133
 }
 
 variable "ecr_repository_arn" {

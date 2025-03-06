@@ -50,18 +50,28 @@ variable "otel_exporter_hostame" {
   type        = string
 }
 
-variable "otel_http_port" {
+variable "otel_gateway_health_port" {
+  description = "Port for OpenTelemetry Gateway health check"
+  type        = number
+}
+
+variable "otel_gateway_http_port" {
   description = "Port for OpenTelemetry HTTP endpoint"
   type        = number
 }
 
-variable "otel_grpc_port" {
+variable "otel_gateway_grpc_port" {
   description = "Port for OpenTelemetry GRPC endpoint"
   type        = number
 }
 
 variable "otel_sidecar_http_port" {
   description = "Port for OpenTelemetry HTTP endpoint in the app sidecar"
+  type        = number
+}
+
+variable "otel_sidecar_health_port" {
+  description = "Port for OpenTelemetry sidecar health check"
   type        = number
 }
 

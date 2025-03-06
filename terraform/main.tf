@@ -160,8 +160,9 @@ module "collector" {
   grafana_api_key_secret_arn = module.secrets.grafana_api_key_secret_arn
   grafana_cloud_instance_id  = var.grafana_cloud_instance_id
   grafana_otel_endpoint      = var.grafana_otel_endpoint
-  otel_grpc_port             = var.otel_grpc_port
-  otel_http_port             = var.otel_http_port
+  otel_gateway_grpc_port     = var.otel_gateway_grpc_port
+  otel_gateway_http_port     = var.otel_gateway_http_port
+  otel_gateway_health_port   = var.otel_gateway_health_port
 
   alb_sg_id          = module.collector_gateway_alb_sg.id
   container_sg_id    = module.collector_gateway_container_sg.id
@@ -202,11 +203,12 @@ module "app" {
 
   otel_collector_env         = var.otel_collector_env
   otel_exporter_hostame      = var.otel_exporter_hostame
-  otel_grpc_gateway_endpoint = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_grpc_port}" : "http://${module.collector.alb_dns_name}:${var.otel_grpc_port}"
-  otel_http_gateway_endpoint = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_http_port}"
+  otel_grpc_gateway_endpoint = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_grpc_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_grpc_port}"
+  otel_http_gateway_endpoint = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_http_port}"
   otel_sidecar_image_uri     = module.otel_sidecar_docker.image_uri
   otel_sidecar_grpc_port     = var.otel_sidecar_grpc_port
   otel_sidecar_http_port     = var.otel_sidecar_http_port
+  otel_sidecar_health_port   = var.otel_sidecar_health_port
 
   alb_sg_id          = module.app_alb_sg.id
   container_sg_id    = module.app_container_sg.id
@@ -239,5 +241,5 @@ module "lambdas" {
   media_management_sqs_queue_arn = module.eventing.media_management_sqs_queue_arn
   media_s3_bucket_name           = var.media_s3_bucket_name
 
-  otel_http_gateway_endpoint = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_http_port}"
+  otel_http_gateway_endpoint = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_http_port}"
 }

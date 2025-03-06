@@ -99,10 +99,9 @@ variable "otel_sidecar_http_port" {
   type        = number
 }
 
-variable "otel_col_health_port" {
-  description = "Port the collector health check listens on"
+variable "otel_sidecar_health_port" {
+  description = "Port for OpenTelemetry sidecar health check"
   type        = number
-  default     = 13134
 }
 
 variable "app_log_group_name" {
