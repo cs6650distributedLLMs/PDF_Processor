@@ -308,6 +308,10 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
         {
           "name": "OTEL_GATEWAY_HEALTH_PORT",
           "value": "${var.otel_gateway_health_port}"
+        },
+        {
+          "name": "OTEL_COLLECTOR_ENV",
+          "value": "${var.otel_collector_env}"
         }
       ],
       "secrets": [

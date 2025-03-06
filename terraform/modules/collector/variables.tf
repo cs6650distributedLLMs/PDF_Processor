@@ -9,6 +9,11 @@ variable "vpc_id" {
   type        = string
 }
 
+variable "otel_collector_env" {
+  description = "Environment for the OpenTelemetry collector"
+  type        = string
+}
+
 variable "otel_gateway_http_port" {
   description = "Collector's HTTP port."
   type        = number

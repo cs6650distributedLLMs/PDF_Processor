@@ -160,6 +160,7 @@ module "collector" {
   grafana_api_key_secret_arn = module.secrets.grafana_api_key_secret_arn
   grafana_cloud_instance_id  = var.grafana_cloud_instance_id
   grafana_otel_endpoint      = var.grafana_otel_endpoint
+  otel_collector_env         = var.otel_collector_env
   otel_gateway_grpc_port     = var.otel_gateway_grpc_port
   otel_gateway_http_port     = var.otel_gateway_http_port
   otel_gateway_health_port   = var.otel_gateway_health_port

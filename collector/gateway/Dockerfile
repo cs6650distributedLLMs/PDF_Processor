@@ -20,6 +20,7 @@ RUN rm ${OTEL_COLLECTOR_TAR_FILE}
 
 COPY entrypoint.sh .
 COPY config.yaml .
+COPY config-localstack.yaml .
 
 RUN addgroup -S otel && adduser -S otel -G otel
 RUN chown -R otel:otel /collector
