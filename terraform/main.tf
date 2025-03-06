@@ -122,7 +122,6 @@ module "dynamodb" {
 
   source                  = "./modules/dynamodb"
   additional_tags         = local.common_tags
-  aws_region              = var.aws_region
   vpc_id                  = module.networking.vpc_id
   dynamodb_table_name     = var.media_dymamo_table_name
   private_route_table_ids = module.networking.private_route_table_ids
@@ -150,15 +149,14 @@ module "collector" {
 
   source = "./modules/collector"
 
-  vpc_id = module.networking.vpc_id
-
   additional_tags = local.common_tags
-  aws_region      = var.aws_region
 
+  vpc_id             = module.networking.vpc_id
   desired_task_count = var.desired_task_count
 
-  ecr_repository_arn         = module.ecr.ecr_repository_arn
-  gateway_image_uri          = module.otel_gateway_docker.image_uri
+  ecr_repository_arn = module.ecr.ecr_repository_arn
+  gateway_image_uri  = module.otel_gateway_docker.image_uri
+
   grafana_api_key_secret_arn = module.secrets.grafana_api_key_secret_arn
   grafana_cloud_instance_id  = var.grafana_cloud_instance_id
   grafana_otel_endpoint      = var.grafana_otel_endpoint
@@ -184,21 +182,24 @@ module "app" {
 
   source = "./modules/app"
 
-  vpc_id          = module.networking.vpc_id
   additional_tags = local.common_tags
-  aws_region      = var.aws_region
 
+  vpc_id             = module.networking.vpc_id
   desired_task_count = var.desired_task_count
 
-  app_port                   = var.hummingbird_app_port
-  dynamodb_table_arn         = module.dynamodb.dynamodb_table_arn
-  dynamodb_table_name        = module.dynamodb.dynamodb_table_name
-  ecr_repository_arn         = module.ecr.ecr_repository_arn
-  hummingbird_image_uri      = module.hummingbird_docker.image_uri
+  app_port            = var.hummingbird_app_port
+  dynamodb_table_arn  = module.dynamodb.dynamodb_table_arn
+  dynamodb_table_name = module.dynamodb.dynamodb_table_name
+
+  ecr_repository_arn    = module.ecr.ecr_repository_arn
+  hummingbird_image_uri = module.hummingbird_docker.image_uri
+
   media_bucket_arn           = module.media_bucket.media_bucket_arn
   media_management_topic_arn = module.eventing.media_management_topic_arn
   media_s3_bucket_name       = var.media_s3_bucket_name
-  node_env                   = var.node_env
+
+  node_env = var.node_env
+
   otel_collector_env         = var.otel_collector_env
   otel_exporter_hostame      = var.otel_exporter_hostame
   otel_grpc_gateway_endpoint = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_grpc_port}" : "http://${module.collector.alb_dns_name}:${var.otel_grpc_port}"
@@ -226,14 +227,17 @@ module "lambdas" {
 
   source = "./modules/lambda"
 
-  lambdas_src_path = "../hummingbird/lambdas"
-  additional_tags  = local.common_tags
+  additional_tags = local.common_tags
 
-  dynamodb_table_arn             = module.dynamodb.dynamodb_table_arn
-  dynamodb_table_name            = module.dynamodb.dynamodb_table_name
+  lambdas_src_path = "../hummingbird/lambdas"
+
+  dynamodb_table_arn  = module.dynamodb.dynamodb_table_arn
+  dynamodb_table_name = module.dynamodb.dynamodb_table_name
+
   media_bucket_arn               = module.media_bucket.media_bucket_arn
   media_bucket_id                = module.media_bucket.media_bucket_id
   media_management_sqs_queue_arn = module.eventing.media_management_sqs_queue_arn
   media_s3_bucket_name           = var.media_s3_bucket_name
-  otel_http_gateway_endpoint     = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_http_port}"
+
+  otel_http_gateway_endpoint = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_http_port}"
 }

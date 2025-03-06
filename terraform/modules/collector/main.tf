@@ -1,3 +1,5 @@
+data "aws_region" "current" {}
+
 resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_grpc" {
   security_group_id = var.alb_sg_id
   description       = "Allow GRPC traffic from the OTel exporters"
@@ -333,7 +335,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "${var.collector_log_group_name}",
-          "awslogs-region": "${var.aws_region}",
+          "awslogs-region": "${data.aws_region.current.name}",
           "awslogs-stream-prefix": "collector"
         }
       }

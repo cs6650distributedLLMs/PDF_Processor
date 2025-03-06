@@ -4,11 +4,6 @@ variable "additional_tags" {
   default     = {}
 }
 
-variable "aws_region" {
-  description = "The AWS region to deploy resources."
-  type        = string
-}
-
 variable "vpc_id" {
   description = "ID of the VPC"
   type        = string

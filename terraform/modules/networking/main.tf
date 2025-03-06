@@ -1,3 +1,5 @@
+data "aws_region" "current" {}
+
 resource "aws_vpc" "vpc" {
   cidr_block = var.vpc_cidr
 
@@ -9,7 +11,7 @@ resource "aws_vpc" "vpc" {
 resource "aws_subnet" "public_subnet_one" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = var.public_subnet_cidrs[0]
-  availability_zone       = "${var.aws_region}a"
+  availability_zone       = "${data.aws_region.current.name}a"
   map_public_ip_on_launch = true
 
   tags = merge(var.additional_tags, {
@@ -20,7 +22,7 @@ resource "aws_subnet" "public_subnet_one" {
 resource "aws_subnet" "public_subnet_two" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = var.public_subnet_cidrs[1]
-  availability_zone       = "${var.aws_region}b"
+  availability_zone       = "${data.aws_region.current.name}b"
   map_public_ip_on_launch = true
 
   tags = merge(var.additional_tags, {
@@ -31,7 +33,7 @@ resource "aws_subnet" "public_subnet_two" {
 resource "aws_subnet" "private_subnet_one" {
   vpc_id            = aws_vpc.vpc.id
   cidr_block        = var.private_subnet_cidrs[0]
-  availability_zone = "${var.aws_region}a"
+  availability_zone = "${data.aws_region.current.name}a"
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-private-subnet-one"
@@ -41,7 +43,7 @@ resource "aws_subnet" "private_subnet_one" {
 resource "aws_subnet" "private_subnet_two" {
   vpc_id            = aws_vpc.vpc.id
   cidr_block        = var.private_subnet_cidrs[1]
-  availability_zone = "${var.aws_region}b"
+  availability_zone = "${data.aws_region.current.name}b"
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-private-subnet-two"

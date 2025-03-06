@@ -1,3 +1,5 @@
+data "aws_region" "current" {}
+
 resource "aws_ecr_repository" "ecr_repository" {
   name = var.ecr_repository_name
 
@@ -66,6 +68,6 @@ resource "aws_ecr_repository_policy" "ecr_repository_policy" {
 
 resource "null_resource" "login_to_ecr" {
   provisioner "local-exec" {
-    command = "aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${aws_ecr_repository.ecr_repository.repository_url}"
+    command = "aws ecr get-login-password --region ${data.aws_region.current.name} | docker login --username AWS --password-stdin ${aws_ecr_repository.ecr_repository.repository_url}"
   }
 }
