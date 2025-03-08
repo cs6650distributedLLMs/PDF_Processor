@@ -15,7 +15,7 @@ const logger = getLogger();
  * @param {string} param0.mediaName The name of the media file
  * @param {WritableStream|Buffer} param0.writeStream The stream to read the media from
  * @param {string} param0.keyPrefix The prefix to use in the S3 key
- * @return void
+ * @returns Promise<void>
  */
 const uploadMediaToStorage = ({
   mediaId,
@@ -47,7 +47,7 @@ const uploadMediaToStorage = ({
  * @param {object} param0 Function parameters
  * @param {string} param0.mediaId The partial key to store the media under in S3
  * @param {string} param0.mediaName The name of the media file
- * @return {Promise<Uint8Array>} The media file stream
+ * @returns {Promise<Uint8Array>} The media file stream
  */
 const getMediaFile = async ({ mediaId, mediaName }) => {
   try {
@@ -71,8 +71,8 @@ const getMediaFile = async ({ mediaId, mediaName }) => {
  * @param {object} param0 Function parameters
  * @param {string} param0.mediaId The partial key to store the media under in S3
  * @param {string} param0.mediaName The name of the media file
- * @param {string} param0.keyPrefix The prefix to use in the S3 key
- * @return {Promise<void>}
+ * @param {string} [keyPrefix=uploads] param0.keyPrefix The prefix to use in the S3 key
+ * @returns {Promise<void>}
  */
 const deleteMediaFile = async ({
   mediaId,

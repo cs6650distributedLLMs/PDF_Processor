@@ -8,12 +8,19 @@ const { getLogger } = require('../logger.js');
 const logger = getLogger();
 
 /**
+ * Media file metadata in AWS S3.
+ * @typedef {object} MediaMetadata
+ * @property {string} name
+ * @property {string} status
+ */
+
+/**
  * Conditionally updates the status of a media object in DynamoDB.
  * @param {object} param0 The media object key
  * @param {string} param0.mediaId The media ID
  * @param {string} param0.newStatus The new status to set
  * @param {string} param0.expectedCurrentStatus The expected current status
- * @return {Promise<object>}
+ * @returns {Promise<MediaMetadata>}
  */
 const setMediaStatusConditionally = async ({
   mediaId,
@@ -48,6 +55,7 @@ const setMediaStatusConditionally = async ({
 
     return {
       name: Attributes.name.S,
+      status: Attributes.status.S,
     };
   } catch (error) {
     logger.error(error);
@@ -60,7 +68,7 @@ const setMediaStatusConditionally = async ({
  * @param {object} param0 Function parameters
  * @param {string} param0.mediaId The media ID
  * @param {string} param0.newStatus The new status to set
- * @return {Promise<void>}
+ * @returns {Promise<void>}
  */
 const setMediaStatus = async ({ mediaId, newStatus }) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
@@ -88,7 +96,7 @@ const setMediaStatus = async ({ mediaId, newStatus }) => {
 /**
  * Deletes the media object metadata from DynamoDB.
  * @param {string} mediaId The media ID
- * @return {Promise<object>}
+ * @returns {Promise<MediaMetadata>}
  */
 const deleteMedia = async (mediaId) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;

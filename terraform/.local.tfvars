@@ -1,7 +1,7 @@
 aws_region                = "us-west-2"
 desired_task_count        = 1
 grafana_cloud_instance_id = 1185300
-grafana_otel_endpoint     = "https://otlp-gateway-prod-us-west-0.grafana.net/otlp"
+grafana_otel_endpoint     = "http://host.docker.internal:4318"
 hummingbird_app_port      = 9000
 otel_collector_env        = "localstack"
 otel_exporter_hostame     = "172.20.0.1"

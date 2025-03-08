@@ -15,3 +15,14 @@ services:
     volumes:
       - '${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack'
       - '/var/run/docker.sock:/var/run/docker.sock'
+    depends_on:
+      - grafana
+  grafana:
+    container_name: grafana-lgtm
+    image: grafana/otel-lgtm
+    ports:
+      - '3000:3000'
+      - '4317:4317'
+      - '4318:4318'
+    environment:
+      - GF_PATHS_DATA=/data/grafana

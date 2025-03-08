@@ -23,6 +23,7 @@ const getHandler = () => {
         continue;
       }
 
+      /** @type {string} */
       const mediaId = message.payload?.mediaId;
 
       if (!mediaId) {
@@ -32,20 +33,21 @@ const getHandler = () => {
 
       logger.info(`Deleting media with id ${mediaId}.`);
 
-      const deletedMedia = await deleteMedia(mediaId);
+      const { name: mediaName, status } = await deleteMedia(mediaId);
 
-      if (!deletedMedia) {
+      if (!mediaName) {
         logger.info(`Media with id ${mediaId} not found.`);
         continue;
       }
 
-      await deleteMediaFile({ mediaId, mediaName: deletedMedia.name });
+      await deleteMediaFile({ mediaId, mediaName });
 
-      if (deletedMedia.status === MEDIA_STATUS.COMPLETE) {
+      if (status !== MEDIA_STATUS.PROCESSING) {
+        const keyPrefix = status === MEDIA_STATUS.ERROR ? 'uploads' : 'resized';
         await deleteMediaFile({
           mediaId,
-          mediaName: deletedMedia.name,
-          keyPrefix: 'resized',
+          mediaName,
+          keyPrefix,
         });
       }
 
@@ -54,6 +56,8 @@ const getHandler = () => {
       logger.info('Flushing OpenTelemetry signals');
       await global.customInstrumentation.metricReader.forceFlush();
       await global.customInstrumentation.traceExporter.forceFlush();
+
+      logger.info(`Delete media finished for ID ${mediaId}`);
     }
   };
 };

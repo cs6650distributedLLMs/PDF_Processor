@@ -21,7 +21,7 @@ const endpoint = isLocalEnv()
  * @param {string} param0.mediaName The name of the media file
  * @param {WritableStream|Buffer} param0.writeStream The stream to read the media from
  * @param {string} param0.keyPrefix The prefix to use in the S3 key
- * @return Promise<CompleteMultipartUploadCommandOutput>
+ * @returns Promise<CompleteMultipartUploadCommandOutput>
  */
 export const uploadMediaToStorage = ({
   mediaId,
@@ -54,7 +54,7 @@ export const uploadMediaToStorage = ({
  * @param {object} param0 Function parameters
  * @param {string} param0.mediaId The partial key to store the media under in S3
  * @param {string} param0.mediaName The name of the media file
- * @return {Promise<string>} The signed URL.
+ * @returns {Promise<string>} The signed URL.
  */
 export const getProcessedMediaUrl = async ({ mediaId, mediaName }) => {
   try {
@@ -85,7 +85,7 @@ export const getProcessedMediaUrl = async ({ mediaId, mediaName }) => {
  * @param {object} param0 Function parameters
  * @param {string} param0.mediaId The partial key to store the media under in S3
  * @param {string} param0.mediaName The name of the media file
- * @return {Promise<Uint8Array>} The media file stream
+ * @returns {Promise<Uint8Array>} The media file stream
  */
 export const getMediaFile = async ({ mediaId, mediaName }) => {
   try {
@@ -113,7 +113,7 @@ export const getMediaFile = async ({ mediaId, mediaName }) => {
  * @param {string} param0.mediaId The partial key to store the media under in S3
  * @param {string} param0.mediaName The name of the media file
  * @param {string} param0.keyPrefix The prefix to use in the S3 key
- * @return {Promise<void>}
+ * @returns {Promise<void>}
  */
 export const deleteMediaFile = async ({
   mediaId,

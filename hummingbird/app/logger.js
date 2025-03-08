@@ -10,7 +10,7 @@ let logger;
 
 /**
  * Initialize the logger.
- * @return {void}
+ * @returns {void}
  */
 export const init = () => {
   logger = winston.createLogger({

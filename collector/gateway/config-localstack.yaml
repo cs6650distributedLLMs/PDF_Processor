@@ -2,10 +2,6 @@ extensions:
   health_check:
     endpoint: "0.0.0.0:${OTEL_GATEWAY_HEALTH_PORT}"
     path: /health
-  basicauth/grafana_cloud:
-    client_auth:
-      username: "${GRAFANA_CLOUD_INSTANCE_ID}"
-      password: "${GRAFANA_CLOUD_API_KEY}"
 
 connectors:
   grafanacloud:
@@ -26,8 +22,6 @@ receivers:
 exporters:
   otlphttp/grafana_cloud:
     endpoint: "${GRAFANA_OTEL_ENDPOINT}"
-    auth:
-      authenticator: basicauth/grafana_cloud
     sending_queue:
       queue_size: 1024
 
@@ -114,7 +108,7 @@ service:
       receivers: [ grafanacloud ]
       processors: [ batch ]
       exporters: [ otlphttp/grafana_cloud ]
-  extensions: [ health_check, basicauth/grafana_cloud ]
+  extensions: [ health_check ]
   telemetry:
     logs:
       level: ${OTEL_GATEWAY_LOG_LEVEL}

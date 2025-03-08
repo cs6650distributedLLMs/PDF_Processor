@@ -22,7 +22,7 @@ const endpoint = isLocalEnv()
  * @param {number} param0.size The size of the media object in bytes
  * @param {string} param0.name The original filename of the media object
  * @param {string} param0.mimetype The MIME type of the media object
- * @return {Promise<void>}
+ * @returns {Promise<void>}
  */
 export const createMedia = async ({ mediaId, size, name, mimetype }) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
@@ -54,7 +54,7 @@ export const createMedia = async ({ mediaId, size, name, mimetype }) => {
 /**
  * Gets metadata about a media object from DynamoDB.
  * @param {string} mediaId The media ID.
- * @return {Promise<object>} The media object metadata.
+ * @returns {Promise<object>} The media object metadata.
  */
 export const getMedia = async (mediaId) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
@@ -97,7 +97,7 @@ export const getMedia = async (mediaId) => {
  * @param {string} param0.mediaId The media ID
  * @param {string} param0.newStatus The new status to set
  * @param {string} param0.expectedCurrentStatus The expected current status
- * @return {Promise<object>}
+ * @returns {Promise<object>}
  */
 export const setMediaStatusConditionally = async ({
   mediaId,
@@ -147,7 +147,7 @@ export const setMediaStatusConditionally = async ({
  * @param {object} param0 Function parameters
  * @param {string} param0.mediaId The media ID
  * @param {string} param0.newStatus The new status to set
- * @return {Promise<void>}
+ * @returns {Promise<void>}
  */
 export const setMediaStatus = async ({ mediaId, newStatus }) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
@@ -178,7 +178,7 @@ export const setMediaStatus = async ({ mediaId, newStatus }) => {
 /**
  * Deletes the media object metadata from DynamoDB.
  * @param {string} mediaId The media ID
- * @return {Promise<object>}
+ * @returns {Promise<object>}
  */
 export const deleteMedia = async (mediaId) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;

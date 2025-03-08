@@ -10,7 +10,7 @@ let logger;
 
 /**
  * Initialize the logger.
- * @return {void}
+ * @returns {void}
  */
 const init = ({ service = 'hummingbird' } = {}) => {
   logger = winston.createLogger({

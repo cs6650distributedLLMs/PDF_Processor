@@ -22,7 +22,7 @@ const withLogging = flow(withEventLogging, withErrorLogging);
  * Extracts the media ID from an S3 key.
  * An S3 key is in the format `{prefix}/{mediaId}/{mediaName}`
  * @param {string} s3Key The media S3 key
- * @return {string} The media ID
+ * @returns {string} The media ID
  */
 const getMediaId = (s3Key) => {
   const keyArray = s3Key.split('/');

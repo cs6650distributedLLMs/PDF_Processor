@@ -17,7 +17,7 @@ const failuresCounter = meter.createCounter('media.upload.failure', {
 /**
  * Uploads a media file to AWS S3 in a streaming fashion.
  * @param {Request} req Express.js (Node) HTTP request object.
- * @return {Promise<string>} The file ID.
+ * @returns {Promise<string>} The file ID.
  */
 export const uploadMedia = async (req) => {
   return new Promise((resolve, reject) => {

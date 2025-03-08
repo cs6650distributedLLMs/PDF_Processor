@@ -14,7 +14,7 @@ const endpoint = isLocalEnv()
  * @param {object} param0 Function parameters
  * @param {string} param0.topicArn The ARN of the SNS topic to publish to
  * @param {object} param0.message The message to publish
- * @return {Promise<void>}
+ * @returns {Promise<void>}
  */
 export const publishEvent = async ({ topicArn, message }) => {
   try {
@@ -38,7 +38,7 @@ export const publishEvent = async ({ topicArn, message }) => {
 /**
  * Publishes a delete media event to the media management topic
  * @param {string} mediaId The ID of the media to delete
- * @return {Promise<void>}
+ * @returns {Promise<void>}
  */
 export const publishDeleteMediaEvent = async (mediaId) => {
   const message = {

@@ -14,7 +14,7 @@ const logger = getLogger();
 
 /**
  * Gets the handler for the processMedia Lambda function.
- * @return {Function} The Lambda function handler
+ * @returns {Function} The Lambda function handler
  * @see https://docs.aws.amazon.com/lambda/latest/dg/nodejs-handler.html
  */
 const getHandler = () => {
@@ -22,7 +22,7 @@ const getHandler = () => {
    * Processes a media file uploaded to S3.
    * @param {object} event The S3 event object
    * @param {object} context The Lambda execution context
-   * @return {Promise<void>}
+   * @returns {Promise<void>}
    */
   return async (event, context) => {
     const mediaId = getMediaId(event.Records[0].s3.object.key);
@@ -66,12 +66,14 @@ const getHandler = () => {
       logger.info('Flushing OpenTelemetry signals');
       await global.customInstrumentation.metricReader.forceFlush();
       await global.customInstrumentation.traceExporter.forceFlush();
+
+      logger.info(`Media processing finished for ID ${mediaId}`);
     } catch (err) {
       if (err instanceof ConditionalCheckFailedException) {
         logger.error(
           `Media ${mediaId} not found or status is not ${MEDIA_STATUS.PROCESSING}.`
         );
-        return;
+        throw err;
       }
 
       await setMediaStatus({
@@ -88,7 +90,7 @@ const getHandler = () => {
 /**
  * Resizes an image to a specific width and converts it to JPEG format.
  * @param {Uint8Array} imageBuffer The image buffer to resize
- * @return {Promise<Buffer>} The resized image buffer
+ * @returns {Promise<Buffer>} The resized image buffer
  */
 const resizeImage = async (imageBuffer) => {
   const IMAGE_WIDTH_PX = 500;
