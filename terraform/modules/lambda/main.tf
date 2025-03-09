@@ -252,7 +252,7 @@ resource "aws_lambda_function" "delete_media" {
       OTEL_GATEWAY_HTTP_ENDPOINT          = var.otel_http_gateway_endpoint
       OTEL_LAMBDA_GRPC_PORT               = var.otel_lambda_grpc_port
       OTEL_LAMBDA_HTTP_PORT               = var.otel_lambda_http_port
-      OTEL_NODE_DISABLED_INSTRUMENTATIONS = "net,dns"
+      OTEL_NODE_DISABLED_INSTRUMENTATIONS = "fs,net,dns"
       OTEL_LAMBDA_LOG_LEVEL               = "INFO"
       # Used by the ADOT layer: https://aws-otel.github.io/docs/getting-started/lambda
       OPENTELEMETRY_COLLECTOR_CONFIG_URI = var.opentelemetry_collector_config_file
@@ -363,7 +363,7 @@ resource "aws_lambda_function" "process_media" {
       OTEL_GATEWAY_HTTP_ENDPOINT          = var.otel_http_gateway_endpoint
       OTEL_LAMBDA_GRPC_PORT               = var.otel_lambda_grpc_port
       OTEL_LAMBDA_HTTP_PORT               = var.otel_lambda_http_port
-      OTEL_NODE_DISABLED_INSTRUMENTATIONS = "net,dns"
+      OTEL_NODE_DISABLED_INSTRUMENTATIONS = "fs,net,dns"
       OTEL_LAMBDA_LOG_LEVEL               = "INFO"
       # Used by the ADOT layer: https://aws-otel.github.io/docs/getting-started/lambda
       OPENTELEMETRY_COLLECTOR_CONFIG_URI = var.opentelemetry_collector_config_file
