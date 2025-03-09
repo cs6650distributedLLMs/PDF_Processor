@@ -83,3 +83,13 @@ variable "desired_task_count" {
   description = "Initial number of tasks to run"
   type        = number
 }
+
+variable "nat_gateway_one_ipv4" {
+  description = "IPv4 address of the NAT gateway #1"
+  type        = string
+}
+
+variable "nat_gateway_two_ipv4" {
+  description = "IPv4 address of the NAT gateway #2"
+  type        = string
+}

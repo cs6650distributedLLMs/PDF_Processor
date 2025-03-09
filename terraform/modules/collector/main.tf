@@ -1,11 +1,11 @@
 data "aws_region" "current" {}
 
-resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_grpc" {
+resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_grpc_ng1" {
   security_group_id = var.alb_sg_id
   description       = "Allow GRPC traffic from the OTel exporters"
   from_port         = var.otel_gateway_grpc_port
   to_port           = var.otel_gateway_grpc_port
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = var.nat_gateway_one_ipv4
   ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
@@ -13,12 +13,38 @@ resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_grpc" 
   })
 }
 
-resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_http" {
+resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_grpc_ng2" {
+  security_group_id = var.alb_sg_id
+  description       = "Allow GRPC traffic from the OTel exporters"
+  from_port         = var.otel_gateway_grpc_port
+  to_port           = var.otel_gateway_grpc_port
+  cidr_ipv4         = var.nat_gateway_two_ipv4
+  ip_protocol       = "tcp"
+
+  tags = merge(var.additional_tags, {
+    Name = "humminbird-collector-allow-inbound-traffic-grpc"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_http_ng1" {
   security_group_id = var.alb_sg_id
   description       = "Allow HTTP traffic from the OTel exporters"
   from_port         = var.otel_gateway_http_port
   to_port           = var.otel_gateway_http_port
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = var.nat_gateway_one_ipv4
+  ip_protocol       = "tcp"
+
+  tags = merge(var.additional_tags, {
+    Name = "humminbird-collector-allow-inbound-traffic-http"
+  })
+}
+
+resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_http_ng2" {
+  security_group_id = var.alb_sg_id
+  description       = "Allow HTTP traffic from the OTel exporters"
+  from_port         = var.otel_gateway_http_port
+  to_port           = var.otel_gateway_http_port
+  cidr_ipv4         = var.nat_gateway_two_ipv4
   ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
@@ -51,12 +77,12 @@ resource "aws_alb" "alb" {
 }
 
 resource "aws_alb_target_group" "alb_grpc_target_group" {
-  name             = "hummingbird-col-alb-grpc-tg"
-  port             = var.otel_gateway_grpc_port
-  protocol         = "HTTP"
-  protocol_version = "GRPC"
-  vpc_id           = var.vpc_id
-  target_type      = "ip"
+  name     = "hummingbird-col-alb-grpc-tg"
+  port     = var.otel_gateway_grpc_port
+  protocol = "HTTP"
+  # protocol_version = "GRPC"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
 
   health_check {
     protocol = "HTTP"

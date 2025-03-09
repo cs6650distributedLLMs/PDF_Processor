@@ -1,6 +1,7 @@
 resource "aws_secretsmanager_secret" "grafana_api_key_secret" {
-  name        = "hummingbird-grafana-api-key"
-  description = "API key for Grafana Cloud"
+  name                    = "hummingbird-grafana-api-key"
+  description             = "API key for Grafana Cloud"
+  recovery_window_in_days = 0
 
   tags = merge(var.additional_tags, {
     Name = "hummingbird-grafana-api-key-secret"

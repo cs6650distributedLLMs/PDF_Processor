@@ -22,3 +22,11 @@ output "private_route_table_ids" {
     aws_route_table.private_route_table_two.id,
   ]
 }
+
+output "nat_gateway_one_ipv4" {
+  value = aws_eip.nat_gateway_one_attachment.public_ip
+}
+
+output "nat_gateway_two_ipv4" {
+  value = aws_eip.nat_gateway_two_attachment.public_ip
+}

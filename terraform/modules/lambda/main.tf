@@ -16,13 +16,16 @@ data "aws_iam_policy_document" "lambda_iam_policy_document" {
     sid    = "EC2Networking"
     effect = "Allow"
     actions = [
+      "ec2:AssignPrivateIpAddresses",
+      "ec2:UnassignPrivateIpAddresses",
       "ec2:AttachNetworkInterface",
       "ec2:CreateNetworkInterface",
       "ec2:CreateNetworkInterfacePermission",
       "ec2:DeleteNetworkInterface",
       "ec2:DeleteNetworkInterfacePermission",
       "ec2:Describe*",
-      "ec2:DetachNetworkInterface"
+      "ec2:DetachNetworkInterface",
+      "ec2:GetSecurityGroupsForVpc"
     ]
     resources = ["*"]
   }
@@ -187,6 +190,17 @@ resource "aws_lambda_layer_version" "otel_lambda_layer" {
 ########################
 # Delete Media Lambda #
 ########################
+resource "aws_vpc_security_group_egress_rule" "allow_delete_lambda_outbound_traffic" {
+  security_group_id = var.delete_media_lambda_sg
+  description       = "Allow all outbound traffic"
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+
+  tags = merge(var.additional_tags, {
+    Name = "humminbird-coll-allow-outbound-traffic-delete-lambda"
+  })
+}
+
 resource "aws_iam_role" "delete_media_iam_role" {
   name               = "hummingbird-delete-media-iam-role"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
@@ -208,6 +222,11 @@ resource "aws_lambda_function" "delete_media" {
     aws_lambda_layer_version.sharp_lambda_layer.arn,
     aws_lambda_layer_version.otel_lambda_layer.arn
   ]
+
+  vpc_config {
+    security_group_ids = [var.delete_media_lambda_sg]
+    subnet_ids         = var.private_subnet_ids
+  }
 
   filename         = local.lambda_zip_file
   function_name    = "hummingbird-delete-media-handler"
@@ -270,6 +289,17 @@ resource "aws_lambda_event_source_mapping" "delete_media_sqs_event_source_mappin
 ########################
 # Process Media Lambda #
 ########################
+resource "aws_vpc_security_group_egress_rule" "allow_process_lambda_outbound_traffic" {
+  security_group_id = var.process_media_lambda_sg
+  description       = "Allow all outbound traffic"
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+
+  tags = merge(var.additional_tags, {
+    Name = "humminbird-coll-allow-outbound-traffic-process-lambda"
+  })
+}
+
 resource "aws_iam_role" "process_media_iam_role" {
   name               = "hummingbird-process-media-iam-role"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
@@ -291,6 +321,11 @@ resource "aws_lambda_function" "process_media" {
     aws_lambda_layer_version.sharp_lambda_layer.arn,
     aws_lambda_layer_version.otel_lambda_layer.arn
   ]
+
+  vpc_config {
+    security_group_ids = [var.process_media_lambda_sg]
+    subnet_ids         = var.private_subnet_ids
+  }
 
   filename         = local.lambda_zip_file
   function_name    = "hummingbird-process-media-handler"

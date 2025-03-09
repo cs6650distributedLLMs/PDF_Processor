@@ -1,6 +1,6 @@
 extensions:
   health_check:
-    endpoint: "localhost:${OTEL_GATEWAY_HEALTH_PORT}"
+    endpoint: "0.0.0.0:${OTEL_GATEWAY_HEALTH_PORT}"
     path: /health
   basicauth/grafana_cloud:
     client_auth:
@@ -15,9 +15,9 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: "localhost:${OTEL_GATEWAY_GRPC_PORT}"
+        endpoint: "0.0.0.0:${OTEL_GATEWAY_GRPC_PORT}"
       http:
-        endpoint: "localhost:${OTEL_GATEWAY_HTTP_PORT}"
+        endpoint: "0.0.0.0:${OTEL_GATEWAY_HTTP_PORT}"
   hostmetrics:
     scrapers:
       load:

@@ -117,6 +117,22 @@ module "app_container_sg" {
   description     = "Hummingbird app container security group"
 }
 
+module "process_media_lambda_sg" {
+  source          = "./modules/security-group"
+  additional_tags = local.common_tags
+  vpc_id          = module.networking.vpc_id
+  name_prefix     = "media-processing-lambda-sg"
+  description     = "Hummingbird media processing lambda security group"
+}
+
+module "delete_media_lambda_sg" {
+  source          = "./modules/security-group"
+  additional_tags = local.common_tags
+  vpc_id          = module.networking.vpc_id
+  name_prefix     = "media-delete-lambda-sg"
+  description     = "Hummingbird media delete lambda security group"
+}
+
 module "dynamodb" {
   depends_on = [module.networking]
 
@@ -165,10 +181,12 @@ module "collector" {
   otel_gateway_http_port     = var.otel_gateway_http_port
   otel_gateway_health_port   = var.otel_gateway_health_port
 
-  alb_sg_id          = module.collector_gateway_alb_sg.id
-  container_sg_id    = module.collector_gateway_container_sg.id
-  private_subnet_ids = module.networking.private_subnet_ids
-  public_subnet_ids  = module.networking.public_subnet_ids
+  alb_sg_id            = module.collector_gateway_alb_sg.id
+  container_sg_id      = module.collector_gateway_container_sg.id
+  private_subnet_ids   = module.networking.private_subnet_ids
+  public_subnet_ids    = module.networking.public_subnet_ids
+  nat_gateway_one_ipv4 = "${module.networking.nat_gateway_one_ipv4}/32"
+  nat_gateway_two_ipv4 = "${module.networking.nat_gateway_two_ipv4}/32"
 
   collector_log_group_name = module.cw_hummingbird_collector.log_group_name
 }
@@ -243,4 +261,9 @@ module "lambdas" {
   media_s3_bucket_name           = var.media_s3_bucket_name
 
   otel_http_gateway_endpoint = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_http_port}"
+
+  process_media_lambda_sg = module.process_media_lambda_sg.id
+  delete_media_lambda_sg  = module.delete_media_lambda_sg.id
+
+  private_subnet_ids = module.networking.private_subnet_ids
 }

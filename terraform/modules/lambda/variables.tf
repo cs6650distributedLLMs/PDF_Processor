@@ -49,3 +49,18 @@ variable "otel_http_gateway_endpoint" {
   description = "OpenTelemetry HTTP Gateway endpoint"
   type        = string
 }
+
+variable "process_media_lambda_sg" {
+  description = "Security group for the process media lambda"
+  type        = string
+}
+
+variable "delete_media_lambda_sg" {
+  description = "Security group for the delete media lambda"
+  type        = string
+}
+
+variable "private_subnet_ids" {
+  description = "IDs of the private subnets"
+  type        = list(string)
+}
