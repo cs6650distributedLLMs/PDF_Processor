@@ -62,12 +62,6 @@ const getHandler = () => {
       });
 
       logger.info(`Resized image ${mediaId}.`);
-
-      logger.info('Flushing OpenTelemetry signals');
-      await global.customInstrumentation.metricReader.forceFlush();
-      await global.customInstrumentation.traceExporter.forceFlush();
-
-      logger.info(`Media processing finished for ID ${mediaId}`);
     } catch (err) {
       if (err instanceof ConditionalCheckFailedException) {
         logger.error(

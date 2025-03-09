@@ -80,7 +80,22 @@ variable "otel_sidecar_grpc_port" {
   type        = number
 }
 
+variable "otel_lambda_grpc_port" {
+  description = "gRPC port the OpenTelemetry collector the Lambda ADOT collector listens on"
+  type        = number
+}
+
+variable "otel_lambda_http_port" {
+  description = "HTTP port the OpenTelemetry collector the Lambda ADOT collector listens on"
+  type        = number
+}
+
 variable "desired_task_count" {
   description = "Number of tasks to run"
   type        = number
+}
+
+variable "lambda_opentelemetry_collector_config_file" {
+  description = "Path to the OpenTelemetry collector configuration file"
+  type        = string
 }

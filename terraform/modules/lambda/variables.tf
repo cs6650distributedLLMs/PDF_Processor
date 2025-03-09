@@ -45,8 +45,28 @@ variable "lambda_architecture" {
   default     = "x86_64"
 }
 
+variable "otel_lambda_grpc_port" {
+  description = "gRPC port the OpenTelemetry collector the Lambda ADOT collector listens on"
+  type        = number
+}
+
+variable "otel_lambda_http_port" {
+  description = "HTTP port the OpenTelemetry collector the Lambda ADOT collector listens on"
+  type        = number
+}
+
+variable "otel_grpc_gateway_endpoint" {
+  description = "OpenTelemetry gRPC Gateway endpoint"
+  type        = string
+}
+
 variable "otel_http_gateway_endpoint" {
   description = "OpenTelemetry HTTP Gateway endpoint"
+  type        = string
+}
+
+variable "opentelemetry_collector_config_file" {
+  description = "Path to the OpenTelemetry collector configuration file"
   type        = string
 }
 

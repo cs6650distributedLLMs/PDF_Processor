@@ -260,7 +260,11 @@ module "lambdas" {
   media_management_sqs_queue_arn = module.eventing.media_management_sqs_queue_arn
   media_s3_bucket_name           = var.media_s3_bucket_name
 
-  otel_http_gateway_endpoint = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_http_port}"
+  otel_lambda_grpc_port               = var.otel_lambda_grpc_port
+  otel_lambda_http_port               = var.otel_lambda_http_port
+  otel_grpc_gateway_endpoint          = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_grpc_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_grpc_port}"
+  otel_http_gateway_endpoint          = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_http_port}"
+  opentelemetry_collector_config_file = var.lambda_opentelemetry_collector_config_file
 
   process_media_lambda_sg = module.process_media_lambda_sg.id
   delete_media_lambda_sg  = module.delete_media_lambda_sg.id

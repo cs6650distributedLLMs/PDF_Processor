@@ -1,3 +1,5 @@
+data "aws_region" "current" {}
+
 data "aws_iam_policy_document" "assume_role" {
   statement {
     effect = "Allow"
@@ -219,6 +221,7 @@ resource "aws_lambda_function" "delete_media" {
     aws_lambda_layer_version.otel_lambda_layer,
   ]
   layers = [
+    "arn:aws:lambda:${data.aws_region.current.name}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-1:1",
     aws_lambda_layer_version.sharp_lambda_layer.arn,
     aws_lambda_layer_version.otel_lambda_layer.arn
   ]
@@ -239,12 +242,20 @@ resource "aws_lambda_function" "delete_media" {
 
   environment {
     variables = {
+      AWS_LAMBDA_EXEC_WRAPPER             = "/opt/otel-handler"
       MEDIA_BUCKET_NAME                   = var.media_s3_bucket_name
       MEDIA_DYNAMODB_TABLE_NAME           = var.dynamodb_table_name
-      NODE_OPTIONS                        = "--require /var/task/instrumentation.js"
+      NODE_OPTIONS                        = "--require @aws/aws-distro-opentelemetry-node-autoinstrumentation/register"
       OTEL_EXPORTER_OTLP_PROTOCOL         = "http/protobuf"
-      OTEL_EXPORTER_OTLP_ENDPOINT         = var.otel_http_gateway_endpoint
+      OTEL_EXPORTER_OTLP_ENDPOINT         = "http://localhost:${var.otel_lambda_http_port}"
+      OTEL_GATEWAY_GRPC_ENDPOINT          = var.otel_grpc_gateway_endpoint
+      OTEL_GATEWAY_HTTP_ENDPOINT          = var.otel_http_gateway_endpoint
+      OTEL_LAMBDA_GRPC_PORT               = var.otel_lambda_grpc_port
+      OTEL_LAMBDA_HTTP_PORT               = var.otel_lambda_http_port
       OTEL_NODE_DISABLED_INSTRUMENTATIONS = "net,dns"
+      OTEL_LAMBDA_LOG_LEVEL               = "INFO"
+      # Used by the ADOT layer: https://aws-otel.github.io/docs/getting-started/lambda
+      OPENTELEMETRY_COLLECTOR_CONFIG_URI = var.opentelemetry_collector_config_file
     }
   }
 
@@ -318,6 +329,7 @@ resource "aws_lambda_function" "process_media" {
     aws_lambda_layer_version.otel_lambda_layer,
   ]
   layers = [
+    "arn:aws:lambda:${data.aws_region.current.name}:901920570463:layer:aws-otel-nodejs-amd64-ver-1-30-1:1",
     aws_lambda_layer_version.sharp_lambda_layer.arn,
     aws_lambda_layer_version.otel_lambda_layer.arn
   ]
@@ -341,12 +353,20 @@ resource "aws_lambda_function" "process_media" {
 
   environment {
     variables = {
+      AWS_LAMBDA_EXEC_WRAPPER             = "/opt/otel-handler"
       MEDIA_BUCKET_NAME                   = var.media_s3_bucket_name
       MEDIA_DYNAMODB_TABLE_NAME           = var.dynamodb_table_name
-      NODE_OPTIONS                        = "--require /var/task/instrumentation.js"
+      NODE_OPTIONS                        = "--require @aws/aws-distro-opentelemetry-node-autoinstrumentation/register"
       OTEL_EXPORTER_OTLP_PROTOCOL         = "http/protobuf"
-      OTEL_EXPORTER_OTLP_ENDPOINT         = var.otel_http_gateway_endpoint
+      OTEL_EXPORTER_OTLP_ENDPOINT         = "http://localhost:${var.otel_lambda_http_port}"
+      OTEL_GATEWAY_GRPC_ENDPOINT          = var.otel_grpc_gateway_endpoint
+      OTEL_GATEWAY_HTTP_ENDPOINT          = var.otel_http_gateway_endpoint
+      OTEL_LAMBDA_GRPC_PORT               = var.otel_lambda_grpc_port
+      OTEL_LAMBDA_HTTP_PORT               = var.otel_lambda_http_port
       OTEL_NODE_DISABLED_INSTRUMENTATIONS = "net,dns"
+      OTEL_LAMBDA_LOG_LEVEL               = "INFO"
+      # Used by the ADOT layer: https://aws-otel.github.io/docs/getting-started/lambda
+      OPENTELEMETRY_COLLECTOR_CONFIG_URI = var.opentelemetry_collector_config_file
     }
   }
 
