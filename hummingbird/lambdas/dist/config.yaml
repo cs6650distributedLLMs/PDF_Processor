@@ -15,11 +15,15 @@ exporters:
 
 service:
   pipelines:
+    logs:
+      receivers: [ otlp ]
+      processors: [ ]
+      exporters: [ otlphttp ]
     metrics:
-      receivers: [otlp]
-      processors: []
-      exporters: [otlphttp]
+      receivers: [ otlp ]
+      processors: [ ]
+      exporters: [ otlphttp ]
     traces:
       receivers: [ otlp ]
-      processors: []
-      exporters: [otlphttp]
+      processors: [ ]
+      exporters: [ otlphttp ]

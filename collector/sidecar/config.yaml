@@ -32,14 +32,25 @@ processors:
     check_interval: 1s
     limit_percentage: 80
     spike_limit_percentage: 15
+  batch/logs:
+    timeout: 30s
+    send_batch_size: 10240
+    send_batch_max_size: 10240
   batch/traces:
     timeout: 1s
-    send_batch_size: 50
+    send_batch_size: 8192
+    send_batch_max_size: 8192
   batch/metrics:
-    timeout: 60s
+    timeout: 30s
+    send_batch_size: 8192
+    send_batch_max_size: 8192
 
 service:
   pipelines:
+    logs:
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch/logs ]
+      exporters: [ otlp, otlphttp ]
     metrics:
       receivers: [ otlp ]
       processors: [ memory_limiter, batch/metrics ]

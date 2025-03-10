@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/wederribas/cs7990-master-thesis#readme",
   "dependencies": {
-    "@aws/aws-distro-opentelemetry-node-autoinstrumentation": "^0.5.0"
+    "@aws/aws-distro-opentelemetry-node-autoinstrumentation": "^0.5.0",
+    "@opentelemetry/winston-transport": "^0.10.1"
   }
 }

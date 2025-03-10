@@ -91,6 +91,14 @@ processors:
 
 service:
   pipelines:
+    logs:
+      receivers: [ otlp ]
+      processors: [
+        memory_limiter,
+        transform/drop_unneeded_resource_attributes,
+        batch
+      ]
+      exporters: [ otlphttp/grafana_cloud ]
     traces:
       receivers: [ otlp ]
       processors: [
