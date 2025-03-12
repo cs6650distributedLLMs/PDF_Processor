@@ -25,8 +25,9 @@ export const uploadController = async (req, res) => {
   try {
     const { mediaId, file } = await uploadMedia(req);
     const { size, originalFilename: name, mimetype } = file;
+    const { targetSize } = req?.hummingbirdOptions;
 
-    await createMedia({ mediaId, size, name, mimetype });
+    await createMedia({ mediaId, size, name, mimetype, targetSize });
 
     sendAcceptedResponse(res, { mediaId });
   } catch (error) {

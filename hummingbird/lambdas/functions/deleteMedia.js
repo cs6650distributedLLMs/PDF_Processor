@@ -4,7 +4,7 @@ const { withLogging } = require('../common.js');
 const { MEDIA_STATUS } = require('../constants.js');
 const { init: initializeLogger, getLogger } = require('../logger.js');
 
-initializeLogger({ serviceName: 'deleteMediaLambda' });
+initializeLogger({ service: 'deleteMediaLambda' });
 const logger = getLogger();
 
 const DELETE_EVENT_TYPE = 'media.v1.delete';

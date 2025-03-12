@@ -6,10 +6,11 @@ import {
   statusController,
   uploadController,
 } from '../controllers/media.js';
+import extractMediaResizingOptions from '../middlewares/extractMediaResizingOptions.js';
 
 const router = Router();
 
-router.post('/upload', uploadController);
+router.post('/upload', extractMediaResizingOptions, uploadController);
 
 router.get('/:id/status', statusController);
 

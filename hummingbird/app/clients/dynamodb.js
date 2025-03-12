@@ -18,13 +18,20 @@ const endpoint = isLocalEnv()
 /**
  * Stores metadata about a media object in DynamoDB.
  * @param {object} param0 Media metadata
- * @param {string} param0.mediaId The media ID.
+ * @param {string} param0.mediaId The media ID
  * @param {number} param0.size The size of the media object in bytes
  * @param {string} param0.name The original filename of the media object
  * @param {string} param0.mimetype The MIME type of the media object
+ * @param {number} param0.targetSize The size to resize the uploaded image to
  * @returns {Promise<void>}
  */
-export const createMedia = async ({ mediaId, size, name, mimetype }) => {
+export const createMedia = async ({
+  mediaId,
+  size,
+  name,
+  mimetype,
+  targetSize,
+}) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
   const command = new PutItemCommand({
     TableName,
@@ -35,6 +42,7 @@ export const createMedia = async ({ mediaId, size, name, mimetype }) => {
       name: { S: name },
       mimetype: { S: mimetype },
       status: { S: MEDIA_STATUS.PENDING },
+      targetSize: { N: targetSize },
     },
   });
 

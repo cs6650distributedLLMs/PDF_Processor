@@ -9,7 +9,7 @@ const { getMediaFile, uploadMediaToStorage } = require('../clients/s3.js');
 const { MEDIA_STATUS } = require('../constants.js');
 const { init: initializeLogger, getLogger } = require('../logger.js');
 
-initializeLogger({ serviceName: 'processMediaLambda' });
+initializeLogger({ service: 'processMediaLambda' });
 const logger = getLogger();
 
 /**
@@ -30,11 +30,13 @@ const getHandler = () => {
     try {
       logger.info(`Processing image ${mediaId}.`);
 
-      const { name: mediaName } = await setMediaStatusConditionally({
-        mediaId,
-        newStatus: MEDIA_STATUS.PROCESSING,
-        expectedCurrentStatus: MEDIA_STATUS.PENDING,
-      });
+      const { name: mediaName, targetSize } = await setMediaStatusConditionally(
+        {
+          mediaId,
+          newStatus: MEDIA_STATUS.PROCESSING,
+          expectedCurrentStatus: MEDIA_STATUS.PENDING,
+        }
+      );
 
       logger.info('Media status set to PROCESSING');
 
@@ -42,7 +44,10 @@ const getHandler = () => {
 
       logger.info('Got media file');
 
-      const resizedImage = await resizeImage(image);
+      const resizedImage = await processImageWithSharp({
+        imageBuffer: image,
+        targetSize,
+      });
 
       logger.info('Resized image');
 
@@ -83,13 +88,22 @@ const getHandler = () => {
 
 /**
  * Resizes an image to a specific width and converts it to JPEG format.
- * @param {Uint8Array} imageBuffer The image buffer to resize
+ * @param {object} param0 The function parameters
+ * @param {Uint8Array} param0.imageBuffer The image buffer to resize
+ * @param {string} targetSize The size to resize the uploaded image to
  * @returns {Promise<Buffer>} The resized image buffer
  */
-const resizeImage = async (imageBuffer) => {
-  const IMAGE_WIDTH_PX = 500;
+const processImageWithSharp = async ({ imageBuffer, targetSize }) => {
+  const DEFAULT_IMAGE_WIDTH_PX = 500;
+  const imageSizePx = parseInt(targetSize) || DEFAULT_IMAGE_WIDTH_PX;
   return await sharp(imageBuffer)
-    .resize(IMAGE_WIDTH_PX)
+    .resize(imageSizePx)
+    .composite([
+      {
+        input: './hummingbird-watermark.png',
+        gravity: 'southeast',
+      },
+    ])
     .toFormat('jpeg')
     .toBuffer();
 };
