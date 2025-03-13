@@ -125,12 +125,12 @@ module "process_media_lambda_sg" {
   description     = "Hummingbird media processing lambda security group"
 }
 
-module "delete_media_lambda_sg" {
+module "manage_media_lambda_sg" {
   source          = "./modules/security-group"
   additional_tags = local.common_tags
   vpc_id          = module.networking.vpc_id
-  name_prefix     = "media-delete-lambda-sg"
-  description     = "Hummingbird media delete lambda security group"
+  name_prefix     = "manage-media-lambda-sg"
+  description     = "Hummingbird manage media lambda security group"
 }
 
 module "dynamodb" {
@@ -267,7 +267,7 @@ module "lambdas" {
   opentelemetry_collector_config_file = var.lambda_opentelemetry_collector_config_file
 
   process_media_lambda_sg = module.process_media_lambda_sg.id
-  delete_media_lambda_sg  = module.delete_media_lambda_sg.id
+  manage_media_lambda_sg  = module.manage_media_lambda_sg.id
 
   private_subnet_ids = module.networking.private_subnet_ids
 }

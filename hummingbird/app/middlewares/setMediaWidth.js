@@ -10,7 +10,10 @@ const { DEFAULT_MEDIA_WIDTH } = MEDIA_WIDTH;
  * @returns void
  */
 const middleware = (req, res, next) => {
-  const { width } = req.query;
+  const { width: widthFromQs } = req.query;
+  const { width: widthFromBody } = req.body;
+
+  const width = widthFromQs || widthFromBody;
 
   req.hummingbirdOptions = {
     ...req?.hummingbirdOptions,

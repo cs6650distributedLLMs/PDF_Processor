@@ -75,8 +75,8 @@ variable "process_media_lambda_sg" {
   type        = string
 }
 
-variable "delete_media_lambda_sg" {
-  description = "Security group for the delete media lambda"
+variable "manage_media_lambda_sg" {
+  description = "Security group for the manage media lambda"
   type        = string
 }
 

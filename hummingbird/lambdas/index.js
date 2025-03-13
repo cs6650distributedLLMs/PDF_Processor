@@ -1,9 +1,11 @@
-const { handler: deleteMedia } = require('./functions/deleteMedia.js');
-const { handler: processMedia } = require('./functions/processMedia.js');
+const { handler: manageMedia } = require('./functions/manageMedia.js');
+const {
+  handler: processMediaUpload,
+} = require('./functions/processMediaUpload.js');
 
 const handlers = {
-  deleteMedia,
-  processMedia,
+  manageMedia,
+  processMediaUpload,
 };
 
 module.exports = { handlers };

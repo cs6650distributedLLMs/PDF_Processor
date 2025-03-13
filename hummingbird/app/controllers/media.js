@@ -17,7 +17,10 @@ import {
 import { getProcessedMediaUrl } from '../clients/s3.js';
 import { createMedia, getMedia } from '../clients/dynamodb.js';
 import { getLogger } from '../logger.js';
-import { publishDeleteMediaEvent } from '../clients/sns.js';
+import {
+  publishDeleteMediaEvent,
+  publishResizeMediaEvent,
+} from '../clients/sns.js';
 
 const logger = getLogger();
 
@@ -25,9 +28,9 @@ export const uploadController = async (req, res) => {
   try {
     const { mediaId, file } = await uploadMedia(req);
     const { size, originalFilename: name, mimetype } = file;
-    const { targetSize } = req?.hummingbirdOptions;
+    const { width } = req.hummingbirdOptions;
 
-    await createMedia({ mediaId, size, name, mimetype, targetSize });
+    await createMedia({ mediaId, size, name, mimetype, width });
 
     sendAcceptedResponse(res, { mediaId });
   } catch (error) {
@@ -129,6 +132,27 @@ export const getController = async (req, res) => {
     }
 
     sendOkResponse(res, media);
+  } catch (error) {
+    logger.error(error);
+    sendErrorResponse(res);
+  }
+};
+
+export const resizeController = async (req, res) => {
+  try {
+    const mediaId = req.params.id;
+
+    const media = await getMedia(mediaId);
+    if (!media) {
+      sendNotFoundResponse(res);
+      return;
+    }
+
+    const { width } = req.hummingbirdOptions;
+
+    await publishResizeMediaEvent({ mediaId, width });
+
+    sendAcceptedResponse(res, { mediaId });
   } catch (error) {
     logger.error(error);
     sendErrorResponse(res);

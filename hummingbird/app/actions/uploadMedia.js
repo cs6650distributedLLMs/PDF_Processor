@@ -24,7 +24,7 @@ export const uploadMedia = async (req) => {
     try {
       tracer.startActiveSpan('upload-media-file', (span) => {
         const mediaId = randomUUID();
-        span.setAttribute('media-id', mediaId);
+        span.setAttribute('media.id', mediaId);
 
         const form = formidable({
           maxFiles: 1,
@@ -88,7 +88,7 @@ export const uploadMedia = async (req) => {
               body: this._writeStream,
             })
               .then(() => {
-                span.setAttribute('file-name', file.originalFilename);
+                span.setAttribute('file.name', file.originalFilename);
                 form.emit('data', { event: 'done', file });
               })
               .catch((error) => {

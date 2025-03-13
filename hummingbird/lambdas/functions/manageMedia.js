@@ -1,57 +1,35 @@
-const { deleteMedia } = require('../clients/dynamodb.js');
-const { deleteMediaFile } = require('../clients/s3.js');
 const { withLogging } = require('../common.js');
-const { MEDIA_STATUS } = require('../constants.js');
 const { init: initializeLogger, getLogger } = require('../logger.js');
+const deleteMediaHandler = require('../eventHandlers/deleteMediaHandler.js');
+const resizeMediaHandler = require('../eventHandlers/resizeMediaHandler.js');
 
-initializeLogger({ service: 'deleteMediaLambda' });
+initializeLogger({ service: 'manageMediaLambda' });
 const logger = getLogger();
 
 const DELETE_EVENT_TYPE = 'media.v1.delete';
+const RESIZE_EVENT_TYPE = 'media.v1.resize';
 
 const getHandler = () => {
   return async (event, context) => {
-    logger.info('Delete media Lambda triggered', { event });
+    logger.info('Media management lambda triggered', { event });
 
     for (const record of event.Records) {
       const body = JSON.parse(record.body);
       const message = JSON.parse(body.Message);
+      const { mediaId, width } = message?.payload || {};
       const type = message.type;
 
-      if (type !== DELETE_EVENT_TYPE) {
-        logger.info(`Skipping message with type ${type}. Not supported.`);
-        continue;
+      switch (type) {
+        case DELETE_EVENT_TYPE:
+          await deleteMediaHandler({ mediaId });
+          break;
+        case RESIZE_EVENT_TYPE:
+          await resizeMediaHandler({ mediaId, width });
+          break;
+        default:
+          logger.info(`Skipping message with type ${type}. Not supported.`);
+          break;
       }
-
-      /** @type {string} */
-      const mediaId = message.payload?.mediaId;
-
-      if (!mediaId) {
-        logger.info('Skipping message with no mediaId.');
-        continue;
-      }
-
-      logger.info(`Deleting media with id ${mediaId}.`);
-
-      const { name: mediaName, status } = await deleteMedia(mediaId);
-
-      if (!mediaName) {
-        logger.info(`Media with id ${mediaId} not found.`);
-        continue;
-      }
-
-      await deleteMediaFile({ mediaId, mediaName });
-
-      if (status !== MEDIA_STATUS.PROCESSING) {
-        const keyPrefix = status === MEDIA_STATUS.ERROR ? 'uploads' : 'resized';
-        await deleteMediaFile({
-          mediaId,
-          mediaName,
-          keyPrefix,
-        });
-      }
-
-      logger.info(`Deleted media with id ${mediaId}.`);
     }
   };
 };

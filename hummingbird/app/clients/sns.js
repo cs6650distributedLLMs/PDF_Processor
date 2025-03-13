@@ -51,3 +51,22 @@ export const publishDeleteMediaEvent = async (mediaId) => {
     message,
   });
 };
+
+/**
+ * Publishes a delete media event to the media management topic
+ * @param {object} param0 Function parameters
+ * @param {string} param0.mediaId The ID of the media to delete
+ * @param {number} param0.width The width to resize the original image to
+ * @returns {Promise<void>}
+ */
+export const publishResizeMediaEvent = async ({ mediaId, width }) => {
+  const message = {
+    type: EVENTS.RESIZE_MEDIA.type,
+    payload: { mediaId, width },
+  };
+
+  await publishEvent({
+    topicArn: EVENTS.RESIZE_MEDIA.topicArn,
+    message,
+  });
+};

@@ -11,7 +11,7 @@ const logger = getLogger();
  * Media file metadata in AWS S3.
  * @typedef {object} MediaMetadata
  * @property {string} name
- * @property {number} targetSize
+ * @property {number} width
  */
 
 /**
@@ -55,7 +55,7 @@ const setMediaStatusConditionally = async ({
 
     return {
       name: Attributes.name.S,
-      targetSize: Attributes.targetSize.N,
+      width: Attributes.width.N,
     };
   } catch (error) {
     logger.error(error);

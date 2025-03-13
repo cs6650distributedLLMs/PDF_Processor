@@ -22,16 +22,10 @@ const endpoint = isLocalEnv()
  * @param {number} param0.size The size of the media object in bytes
  * @param {string} param0.name The original filename of the media object
  * @param {string} param0.mimetype The MIME type of the media object
- * @param {number} param0.targetSize The size to resize the uploaded image to
+ * @param {number} param0.width The size to resize the uploaded image to
  * @returns {Promise<void>}
  */
-export const createMedia = async ({
-  mediaId,
-  size,
-  name,
-  mimetype,
-  targetSize,
-}) => {
+export const createMedia = async ({ mediaId, size, name, mimetype, width }) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
   const command = new PutItemCommand({
     TableName,
@@ -42,7 +36,7 @@ export const createMedia = async ({
       name: { S: name },
       mimetype: { S: mimetype },
       status: { S: MEDIA_STATUS.PENDING },
-      targetSize: { N: targetSize },
+      width: { N: width },
     },
   });
 

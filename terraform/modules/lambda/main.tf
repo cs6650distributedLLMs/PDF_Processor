@@ -190,32 +190,32 @@ resource "aws_lambda_layer_version" "otel_lambda_layer" {
 }
 
 ########################
-# Delete Media Lambda #
+# Manage Media Lambda #
 ########################
-resource "aws_vpc_security_group_egress_rule" "allow_delete_lambda_outbound_traffic" {
-  security_group_id = var.delete_media_lambda_sg
+resource "aws_vpc_security_group_egress_rule" "allow_manage_media_lambda_outbound_traffic" {
+  security_group_id = var.manage_media_lambda_sg
   description       = "Allow all outbound traffic"
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-coll-allow-outbound-traffic-delete-lambda"
+    Name = "humminbird-coll-allow-outbound-traffic-manage-media-lambda"
   })
 }
 
-resource "aws_iam_role" "delete_media_iam_role" {
-  name               = "hummingbird-delete-media-iam-role"
+resource "aws_iam_role" "manage_media_iam_role" {
+  name               = "hummingbird-manage-media-iam-role"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 
   tags = merge(
     var.additional_tags,
     {
-      Name = "hummingbird-delete-media-iam-role"
+      Name = "hummingbird-manage-media-iam-role"
     }
   )
 }
 
-resource "aws_lambda_function" "delete_media" {
+resource "aws_lambda_function" "manage_media" {
   depends_on = [
     aws_lambda_layer_version.sharp_lambda_layer,
     aws_lambda_layer_version.otel_lambda_layer,
@@ -227,14 +227,14 @@ resource "aws_lambda_function" "delete_media" {
   ]
 
   vpc_config {
-    security_group_ids = [var.delete_media_lambda_sg]
+    security_group_ids = [var.manage_media_lambda_sg]
     subnet_ids         = var.private_subnet_ids
   }
 
   filename         = local.lambda_zip_file
-  function_name    = "hummingbird-delete-media-handler"
-  role             = aws_iam_role.delete_media_iam_role.arn
-  handler          = "index.handlers.deleteMedia"
+  function_name    = "hummingbird-manage-media-handler"
+  role             = aws_iam_role.manage_media_iam_role.arn
+  handler          = "index.handlers.manageMedia"
   source_code_hash = data.archive_file.lambda.output_base64sha256
   runtime          = "nodejs22.x"
   architectures    = [var.lambda_architecture]
@@ -261,37 +261,37 @@ resource "aws_lambda_function" "delete_media" {
   tags = merge(
     var.additional_tags,
     {
-      Name = "hummingbird-delete-media-handler"
+      Name = "hummingbird-manage-media-handler"
     }
   )
 }
 
-resource "aws_cloudwatch_log_group" "delete_media_cw_log_group" {
-  depends_on        = [aws_lambda_function.delete_media]
-  name              = "/aws/lambda/${aws_lambda_function.delete_media.function_name}"
+resource "aws_cloudwatch_log_group" "manage_media_cw_log_group" {
+  depends_on        = [aws_lambda_function.manage_media]
+  name              = "/aws/lambda/${aws_lambda_function.manage_media.function_name}"
   retention_in_days = 7
 
   tags = merge(
     var.additional_tags,
     {
-      Name = "hummingbird-delete-media-handler-log-group"
+      Name = "hummingbird-manage-media-handler-log-group"
     }
   )
 }
 
-resource "aws_iam_role_policy_attachment" "delete_lambda_iam_policy_policy_attachment" {
-  role       = aws_iam_role.delete_media_iam_role.name
+resource "aws_iam_role_policy_attachment" "manage_lambda_iam_policy_policy_attachment" {
+  role       = aws_iam_role.manage_media_iam_role.name
   policy_arn = aws_iam_policy.lambda_iam_policy.arn
 }
 
-resource "aws_lambda_event_source_mapping" "delete_media_sqs_event_source_mapping" {
+resource "aws_lambda_event_source_mapping" "manage_media_sqs_event_source_mapping" {
   event_source_arn = var.media_management_sqs_queue_arn
-  function_name    = aws_lambda_function.delete_media.arn
+  function_name    = aws_lambda_function.manage_media.arn
 
   tags = merge(
     var.additional_tags,
     {
-      Name = "hummingbird-delete-media-sqs-event-source-mapping"
+      Name = "hummingbird-manage-media-sqs-event-source-mapping"
     }
   )
 }
@@ -341,7 +341,7 @@ resource "aws_lambda_function" "process_media" {
   filename         = local.lambda_zip_file
   function_name    = "hummingbird-process-media-handler"
   role             = aws_iam_role.process_media_iam_role.arn
-  handler          = "index.handlers.processMedia"
+  handler          = "index.handlers.processMediaUpload"
   source_code_hash = data.archive_file.lambda.output_base64sha256
   runtime          = "nodejs22.x"
   timeout          = 30

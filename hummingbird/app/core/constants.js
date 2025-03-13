@@ -12,6 +12,10 @@ export const EVENTS = {
     topicArn: process.env.MEDIA_MANAGEMENT_TOPIC_ARN,
     type: 'media.v1.delete',
   },
+  RESIZE_MEDIA: {
+    topicArn: process.env.MEDIA_MANAGEMENT_TOPIC_ARN,
+    type: 'media.v1.resize',
+  },
 };
 
 export const MEDIA_STATUS = {
@@ -19,4 +23,10 @@ export const MEDIA_STATUS = {
   PROCESSING: 'PROCESSING',
   COMPLETE: 'COMPLETE',
   ERROR: 'ERROR',
+};
+
+export const MEDIA_WIDTH = {
+  DEFAULT_MEDIA_WIDTH: 500,
+  MIN_MEDIA_WIDTH: 100,
+  MAX_MEDIA_WIDTH: 1024,
 };
