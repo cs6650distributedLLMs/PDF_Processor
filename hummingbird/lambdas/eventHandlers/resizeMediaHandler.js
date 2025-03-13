@@ -1,4 +1,6 @@
 const sharp = require('sharp');
+const { Span } = require('@opentelemetry/api');
+const opentelemetry = require('@opentelemetry/api');
 const { ConditionalCheckFailedException } = require('@aws-sdk/client-dynamodb');
 const { getLogger } = require('../logger');
 const { setMediaStatusConditionally } = require('../clients/dynamodb.js');
@@ -10,11 +12,13 @@ const logger = getLogger();
 
 /**
  * Resize a media file to the specified width.
- * @param {string} mediaId The media ID for resizing
- * @param {number} width The width to resize the media to
+ * @param {object} param0 The function parameters
+ * @param {string} param0.mediaId The media ID for resizing
+ * @param {number} param0.width The width to resize the media to
+ * @param {Span} param0.span OpenTelemetry trace Span object
  * @returns {Promise<void>}
  */
-const resizeMediaHandler = async ({ mediaId, width }) => {
+const resizeMediaHandler = async ({ mediaId, width, span }) => {
   if (!mediaId || !width) {
     logger.info('Skipping resize media message with missing mediaId or width.');
     return;
@@ -35,9 +39,17 @@ const resizeMediaHandler = async ({ mediaId, width }) => {
 
     logger.info('Got media file');
 
+    const mediaProcessingStart = performance.now();
     const resizedImage = await resizeImageWithSharp({
       imageBuffer: image,
       width,
+    });
+    const mediaProcessingEnd = performance.now();
+
+    span.addEvent('sharp.resizing.done', {
+      'media.processing.duration': Math.round(
+        mediaProcessingEnd - mediaProcessingStart
+      ),
     });
 
     logger.info('Resized media');
@@ -58,11 +70,15 @@ const resizeMediaHandler = async ({ mediaId, width }) => {
     });
 
     logger.info(`Resized media ${mediaId}.`);
+    span.setStatus({ code: opentelemetry.SpanStatusCode.OK });
   } catch (err) {
+    span.setStatus({ code: opentelemetry.SpanStatusCode.ERROR });
+
     if (err instanceof ConditionalCheckFailedException) {
       logger.error(
         `Media ${mediaId} not found or status is not ${MEDIA_STATUS.PROCESSING}.`
       );
+      span.end();
       throw err;
     }
 
@@ -72,6 +88,7 @@ const resizeMediaHandler = async ({ mediaId, width }) => {
     });
 
     logger.error(`Failed to resize media ${mediaId}`, err);
+    span.end();
     throw err;
   }
 };

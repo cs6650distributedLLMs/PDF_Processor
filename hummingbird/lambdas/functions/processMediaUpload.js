@@ -48,9 +48,17 @@ const getHandler = () => {
 
         logger.info('Got media file');
 
+        const mediaProcessingStart = performance.now();
         const resizeMedia = await processMediaWithSharp({
           imageBuffer: image,
           width,
+        });
+        const mediaProcessingEnd = performance.now();
+
+        span.addEvent('sharp.resizing.done', {
+          'media.processing.duration': Math.round(
+            mediaProcessingEnd - mediaProcessingStart
+          ),
         });
 
         logger.info('Processed media');
