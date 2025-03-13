@@ -104,6 +104,12 @@ const resizeImageWithSharp = async ({ imageBuffer, width }) => {
   const imageSizePx = parseInt(width);
   return await sharp(imageBuffer)
     .resize(imageSizePx)
+    .composite([
+      {
+        input: './hummingbird-watermark-v2.png',
+        gravity: 'southwest',
+      },
+    ])
     .toFormat('jpeg')
     .toBuffer();
 };
