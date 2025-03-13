@@ -1,0 +1,23 @@
+import { MEDIA_WIDTH } from '../core/constants.js';
+
+const { DEFAULT_MEDIA_WIDTH } = MEDIA_WIDTH;
+
+/**
+ * Extract additional configuration options from the request query string.
+ * @param req
+ * @param res
+ * @param next
+ * @returns void
+ */
+const middleware = (req, res, next) => {
+  const { width } = req.query;
+
+  req.hummingbirdOptions = {
+    ...req?.hummingbirdOptions,
+    width: width ? parseInt(width) : DEFAULT_MEDIA_WIDTH,
+  };
+
+  next();
+};
+
+export default middleware;
