@@ -14,7 +14,7 @@ const RESIZE_EVENT_TYPE = 'media.v1.resize';
 
 const getHandler = () => {
   return async (event, context) => {
-    tracer.startActiveSpan('manage-media', async (span) => {
+    await tracer.startActiveSpan('manage-media', async (span) => {
       logger.info('Media management lambda triggered', { event });
 
       for (const record of event.Records) {

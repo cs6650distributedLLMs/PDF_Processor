@@ -30,7 +30,7 @@ const getHandler = () => {
   return async (event, context) => {
     const mediaId = getMediaId(event.Records[0].s3.object.key);
 
-    tracer.startActiveSpan('process-media-upload', async (span) => {
+    await tracer.startActiveSpan('process-media-upload', async (span) => {
       try {
         logger.info(`Processing media ${mediaId}.`);
 
@@ -82,15 +82,15 @@ const getHandler = () => {
 
         span.setStatus({ code: opentelemetry.SpanStatusCode.OK });
         span.end();
-      } catch (err) {
+      } catch (error) {
         span.setStatus({ code: opentelemetry.SpanStatusCode.ERROR });
 
-        if (err instanceof ConditionalCheckFailedException) {
+        if (error instanceof ConditionalCheckFailedException) {
           span.end();
           logger.error(
             `Media ${mediaId} not found or status is not ${MEDIA_STATUS.PROCESSING}.`
           );
-          throw err;
+          throw error;
         }
 
         await setMediaStatus({
@@ -98,9 +98,9 @@ const getHandler = () => {
           newStatus: MEDIA_STATUS.ERROR,
         });
 
-        logger.error(`Failed to process media ${mediaId}`, err);
+        logger.error(`Failed to process media ${mediaId}`, error);
         span.end();
-        throw err;
+        throw error;
       }
     });
   };

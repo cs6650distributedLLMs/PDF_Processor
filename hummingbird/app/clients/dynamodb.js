@@ -36,7 +36,7 @@ export const createMedia = async ({ mediaId, size, name, mimetype, width }) => {
       name: { S: name },
       mimetype: { S: mimetype },
       status: { S: MEDIA_STATUS.PENDING },
-      width: { N: width },
+      width: { N: String(width) },
     },
   });
 

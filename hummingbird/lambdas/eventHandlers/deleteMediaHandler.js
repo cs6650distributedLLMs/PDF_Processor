@@ -43,11 +43,11 @@ const deleteMediaHandler = async ({ mediaId, span }) => {
 
     logger.info(`Deleted media with id ${mediaId}.`);
     span.setStatus({ code: opentelemetry.SpanStatusCode.OK });
-  } catch (err) {
+  } catch (error) {
     span.setStatus({ code: opentelemetry.SpanStatusCode.ERROR });
-    logger.error(`Error while deleting media with id ${mediaId}.`, err);
+    logger.error(`Error while deleting media with id ${mediaId}.`, error);
     span.end();
-    throw err;
+    throw error;
   }
 };
 

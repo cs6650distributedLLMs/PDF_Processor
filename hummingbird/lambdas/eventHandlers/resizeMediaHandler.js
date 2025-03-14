@@ -71,15 +71,15 @@ const resizeMediaHandler = async ({ mediaId, width, span }) => {
 
     logger.info(`Resized media ${mediaId}.`);
     span.setStatus({ code: opentelemetry.SpanStatusCode.OK });
-  } catch (err) {
+  } catch (error) {
     span.setStatus({ code: opentelemetry.SpanStatusCode.ERROR });
 
-    if (err instanceof ConditionalCheckFailedException) {
+    if (error instanceof ConditionalCheckFailedException) {
       logger.error(
         `Media ${mediaId} not found or status is not ${MEDIA_STATUS.PROCESSING}.`
       );
       span.end();
-      throw err;
+      throw error;
     }
 
     await setMediaStatus({
@@ -87,9 +87,9 @@ const resizeMediaHandler = async ({ mediaId, width, span }) => {
       newStatus: MEDIA_STATUS.ERROR,
     });
 
-    logger.error(`Failed to resize media ${mediaId}`, err);
+    logger.error(`Failed to resize media ${mediaId}`, error);
     span.end();
-    throw err;
+    throw error;
   }
 };
 

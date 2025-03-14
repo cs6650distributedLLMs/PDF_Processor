@@ -1,13 +1,16 @@
 const flow = require('lodash/flow.js');
+const { getLogger } = require('./logger');
+
+const logger = getLogger();
 
 const withErrorLogging =
   (handler) =>
   async (...args) => {
     try {
       return await handler(...args);
-    } catch (err) {
-      console.error(err);
-      throw err;
+    } catch (error) {
+      logger.error(error);
+      throw error;
     }
   };
 

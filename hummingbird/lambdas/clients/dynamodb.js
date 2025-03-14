@@ -55,10 +55,10 @@ const setMediaStatusConditionally = async ({
 
     return {
       name: Attributes.name.S,
-      width: Attributes.width.N,
+      width: parseInt(Attributes.width.N),
     };
   } catch (error) {
-    logger.error(error);
+    logger.error('Error setting media status conditionally', error);
     throw error;
   }
 };
@@ -88,7 +88,7 @@ const setMediaStatus = async ({ mediaId, newStatus }) => {
 
     await client.send(command);
   } catch (error) {
-    logger.error(error);
+    logger.error('Error setting media status', error);
     throw error;
   }
 };
@@ -123,7 +123,7 @@ const deleteMedia = async (mediaId) => {
       status: Attributes.status.S,
     };
   } catch (error) {
-    logger.error(error);
+    logger.error('Error deleting media from DynamoDB', error);
     throw error;
   }
 };
