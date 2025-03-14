@@ -1,6 +1,60 @@
 # cs7990-master-thesis
 
-Monorepo for all code created during the development of my Computer Sciences master thesis.
+Monorepo for all code created during the development of Weder's Computer Sciences master thesis.
+
+The Hummingbird app is an experiment created to explore the feasibility to implement a fairly complex distributed system
+on local. The term "on local" (or locally) should be interpreted as "the act to develop software in one's personal
+computer." Here the assumption is that the vast majority of software developers write software from their laptops or
+desktops, deploying it somewhere else.
+
+Commonly, "somewhere else" means deploying onto a cloud provider (Amazon Web Services, Google Cloud Platform, Oracle
+Cloud, etc.). As the cloud is composed by several services, and most software systems uses a handful of cloud services,
+running through an end-to-end workflow in the system requires redeploying the code after every iteration. Development
+experience (DevX) is a challenge.
+
+In contrast, before the advent of cloud computing, legacy on-premises systems had most, if not all or its components
+deployed to the same computing engine (server). Reproducing this environment locally was somewhat straightforward. A
+software developer using an IDE (Integrated Development Environment) was able to run through an end-to-end workflow,
+inspecting all aspects of the application.
+
+Local cloud emulation aims to provide practitioners the ability to mock several cloud services, in their local machines,
+using an orchestrated fleet of Docker containers. [LocalStack](https://www.localstack.cloud) is the cloud emulator or
+choice for this experiment.
+
+Additionally, as every software system is a closed system, that is: one's ability to infer the state of a software
+system is proportionally related to the systems capacity to emit useful telemetry. Telemetry is the broad definition for
+all possible signals emitted from a system. Example of telemetry are: logs, traces, and metrics. Weder's research
+interest lies in the intersection of software understandability, complexity management, and development experience.
+Therefore, this experiment also implements [OpenTelemetry](https://opentelemetry.io/docs/) as the telemetry framework of
+choice.
+
+This experiment aims to validate the feasibility of implementing a fully functional system, powered by LocalStack
+emulation, made observable with OpenTelemetry instrumentation.
+
+# The Hummingbird App
+
+This is a simple application, purposefully over-engineered. Several aspects of this application might not be considered
+best practices if this system were to be deployed as a real software product.
+
+## What Does It Do?
+
+Hummingbird (Weder's favourite bird) is a simple media processing pipeline. The user can upload an image, get it
+resized, and the download it. That's it!
+
+## System Components
+
+The application is composed by:
+
+- Rest API: provides the endpoints to upload, inspect, download, resize, and delete a media file (for now, only images).
+  The API is deployed over AWS ECS Fargate.
+- Lambda functions to handle asynchronous workflows, such as resizing the uploaded images, or deleting existing images.
+- Eventing services: AWS SNS and SQS are used to power the asynchronous workflows, serving as the pipeline of events
+  emitted by Rest API.
+- Storage: images are stored in AWS S3.
+- Database: images' metadata is stored AWS DynamoDB.
+- Networking components: several networking components are used, as to evaluate LocalStack compatibility with AWS
+  networking systems. AWS VPCs, subnets, internet gateways, NAT gateways, Elastic IPs, and load balancers are used in
+  the experiment.
 
 # Humming Architecture Diagram
 
@@ -64,7 +118,10 @@ from leangaurav.
 ## LocalStack Pro
 
 This project utilizes several AWS services which are only available with a LocalStack Pro subscription. At the time of
-writing, it's possible to run LocalStack Pro with a Hobbyist subscription.
+writing, it's possible to run LocalStack Pro with a Hobbyist subscription. **Make sure to select "I'm working on
+personal projects" when signing up. (see image below)**
+
+![LocalStack sign up form with a hobbyist account option highlighted](./images/localstack-signup-form.png)
 
 Before starting the application: obtain
 an [auth token from LocalStack](https://docs.localstack.cloud/getting-started/auth-token/). Then, create a file named
@@ -107,6 +164,8 @@ To stop the LocalStack CLI and remove the infrastructure, run:
 ```sh
 make stop
 ```
+
+Explore the `Makefile` for all other available commands.
 
 ## Visualizing OpenTelemetry Signals
 
