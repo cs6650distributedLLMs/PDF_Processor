@@ -1,3 +1,8 @@
+.PHONY: configure
+configure-env-files:
+	@cp .env.sample .env
+	@cp terraform/.secret.tfvars.sample terraform/.secret.tfvars
+
 .PHONY: start
 start:
 	@docker compose up -d

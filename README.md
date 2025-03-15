@@ -115,6 +115,15 @@ from leangaurav.
 
 # Getting Started
 
+## Creating Environment/Secret Files
+
+Run the command below to create the required environment/secret files. Those files are ignored by Git and won't be
+included in the repository.
+
+```she
+make configure-env-files
+```
+
 ## LocalStack Pro
 
 This project utilizes several AWS services which are only available with a LocalStack Pro subscription. At the time of
@@ -124,12 +133,7 @@ personal projects" when signing up. (see image below)**
 ![LocalStack sign up form with a hobbyist account option highlighted](./images/localstack-signup-form.png)
 
 Before starting the application: obtain
-an [auth token from LocalStack](https://docs.localstack.cloud/getting-started/auth-token/). Then, create a file named
-`.env` at the root level in the repository.
-
-```sh
-cp .env.sample .env
-```
+an [auth token from LocalStack](https://docs.localstack.cloud/getting-started/auth-token/).
 
 Substitute the temporary value `LOCALSTACK_AUTH_TOKEN` in the `.env` file. If the authentication is properly setup, it's
 possible to access the LocalStack Pro AWS services. Also, when starting the application, the logs will display a message
@@ -138,6 +142,19 @@ similar to this one:
 ```
 INFO --- [  MainThread] l.p.c.b.licensingv2        : Successfully activated cached license ...
 ```
+
+## Grafana Cloud
+
+**Note:** only applicable if deploying to AWS. Skip this step if deploying only to LocalStack.
+
+This project uses Grafana as the observability backend. When deploying to AWS, telemetry will be forwarded to Grafana
+Cloud using the OTLP connection.
+
+Follow [this guide](https://grafana.com/docs/grafana-cloud/monitor-applications/application-observability/collector/opentelemetry-collector/)
+to configure the OpenTelemetry Collector connection.
+
+Replace both `grafana_cloud_api_key` and `grafana_cloud_instance_id` temporary values in `terraform/.secret.tfvars` with
+the respective values obtained from the guide above.
 
 ## API Docs
 
