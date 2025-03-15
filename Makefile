@@ -1,9 +1,20 @@
 .PHONY: configure
 configure:
+	# Initialize Terraform workspaces
 	@terraform workspace new hummingbird-aws
 	@terraform workspace new hummingbird-local
+	# Copy sample env files to permanent files
 	@cp .env.sample .env
 	@cp terraform/.secret.tfvars.sample terraform/.secret.tfvars
+	# Install Lambda builder dependencies
+	@cd hummingbird/lambdas && npm install
+
+.PHONY: run-all-local
+run-all-local:
+	@make clean-terraform-state
+	@make start
+	@make deploy-tf-local
+	@make localstack-logs
 
 .PHONY: start
 start:
@@ -56,13 +67,6 @@ plan-tf-prod:
 	@terraform workspace select hummingbird-aws
 	@cd terraform-state && terraform init && terraform apply -auto-approve
 	@cd terraform && terraform init && terraform plan -var-file='.prd.tfvars' -var-file='.secret.tfvars'
-
-.PHONY: run-all-local
-run-all-local:
-	@make clean-terraform-state
-	@make start
-	@make deploy-tf-local
-	@make localstack-logs
 
 .PHONY: redeploy-image
 redeploy-image:
