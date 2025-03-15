@@ -115,13 +115,15 @@ from leangaurav.
 
 # Getting Started
 
-## Creating Environment/Secret Files
+## Configure Local Environment 
 
-Run the command below to create the required environment/secret files. Those files are ignored by Git and won't be
-included in the repository.
+Run the command below to create the required environment/secret files, initialize the Terraform workspaces, and other needed
+configurations.
+
+Environment-specific files ignored by Git and won't be included in the repository.
 
 ```she
-make configure-env-files
+make configure
 ```
 
 ## LocalStack Pro

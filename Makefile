@@ -1,5 +1,7 @@
 .PHONY: configure
-configure-env-files:
+configure:
+	@terraform workspace new hummingbird-aws
+	@terraform workspace new hummingbird-local
 	@cp .env.sample .env
 	@cp terraform/.secret.tfvars.sample terraform/.secret.tfvars
 
@@ -15,11 +17,6 @@ stop:
 localstack-logs:
 	@docker logs --follow localstack
 
-.PHONY: create-tf-workspaces
-create-tf-workspaces:
-	@terraform workspace new aws
-	@terraform workspace new local
-
 .PHONY: clean-terraform-state
 clean-terraform-state:
 	@rm -rf terraform-state/.terraform terraform-state/.terraform.lock.hcl
@@ -28,35 +25,35 @@ clean-terraform-state:
 
 .PHONY: deploy-tf-local
 deploy-tf-local:
-	@terraform workspace select local
+	@terraform workspace select hummingbird-local
 	@cd terraform-state && tflocal init && tflocal apply -auto-approve
 	@cd terraform && tflocal init && tflocal apply -auto-approve -var-file='.local.tfvars' -var-file='.secret.tfvars'
 
 .PHONY: destroy-tf-local
 destroy-tf-local:
-	@terraform workspace select local
+	@terraform workspace select hummingbird-local
 	@cd terraform && tflocal init && tflocal destroy -auto-approve -var-file='.local.tfvars' -var-file='.secret.tfvars'
 
 .PHONY: plan-tf-local
 plan-tf-local:
-	@terraform workspace select local
+	@terraform workspace select hummingbird-local
 	@cd terraform-state && tflocal init && tflocal apply -auto-approve
 	@cd terraform && tflocal init && tflocal plan -var-file='.local.tfvars' -var-file='.secret.tfvars'
 
 .PHONY: deploy-tf-prd
 deploy-tf-prd:
-	@terraform workspace select aws
+	@terraform workspace select hummingbird-aws
 	@cd terraform-state && terraform init && terraform apply -auto-approve
 	@cd terraform && terraform init && terraform apply -auto-approve -var-file='.prd.tfvars' -var-file='.secret.tfvars'
 
 .PHONY: destroy-tf-prd
 destroy-tf-prd:
-	@terraform workspace select aws
+	@terraform workspace select hummingbird-aws
 	@cd terraform && terraform init && terraform destroy -auto-approve -var-file='.prd.tfvars' -var-file='.secret.tfvars'
 
 .PHONY: plan-tf-prod
 plan-tf-prod:
-	@terraform workspace select aws
+	@terraform workspace select hummingbird-aws
 	@cd terraform-state && terraform init && terraform apply -auto-approve
 	@cd terraform && terraform init && terraform plan -var-file='.prd.tfvars' -var-file='.secret.tfvars'
 
