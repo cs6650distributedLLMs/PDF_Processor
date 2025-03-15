@@ -9,3 +9,8 @@ variable "ecr_repository_name" {
   type        = string
   default     = "hummingbird-media-ecr-repository"
 }
+
+variable "application_environment" {
+  description = "Environment the application is running on. It's either LocalStack or AWS"
+  type        = string
+}

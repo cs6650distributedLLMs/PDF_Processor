@@ -42,8 +42,9 @@ module "media_bucket" {
 }
 
 module "ecr" {
-  source          = "./modules/ecr"
-  additional_tags = local.common_tags
+  source                  = "./modules/ecr"
+  additional_tags         = local.common_tags
+  application_environment = var.application_environment
 }
 
 module "hummingbird_docker" {
@@ -176,7 +177,7 @@ module "collector" {
   grafana_api_key_secret_arn = module.secrets.grafana_api_key_secret_arn
   grafana_cloud_instance_id  = var.grafana_cloud_instance_id
   grafana_otel_endpoint      = var.grafana_otel_endpoint
-  otel_collector_env         = var.otel_collector_env
+  application_environment    = var.application_environment
   otel_gateway_grpc_port     = var.otel_gateway_grpc_port
   otel_gateway_http_port     = var.otel_gateway_http_port
   otel_gateway_health_port   = var.otel_gateway_health_port
@@ -220,10 +221,10 @@ module "app" {
 
   node_env = var.node_env
 
-  otel_collector_env         = var.otel_collector_env
+  application_environment    = var.application_environment
   otel_exporter_hostame      = var.otel_exporter_hostame
-  otel_grpc_gateway_endpoint = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_grpc_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_grpc_port}"
-  otel_http_gateway_endpoint = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_http_port}"
+  otel_grpc_gateway_endpoint = var.application_environment == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_grpc_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_grpc_port}"
+  otel_http_gateway_endpoint = var.application_environment == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_http_port}"
   otel_sidecar_image_uri     = module.otel_sidecar_docker.image_uri
   otel_sidecar_grpc_port     = var.otel_sidecar_grpc_port
   otel_sidecar_http_port     = var.otel_sidecar_http_port
@@ -262,8 +263,8 @@ module "lambdas" {
 
   otel_lambda_grpc_port               = var.otel_lambda_grpc_port
   otel_lambda_http_port               = var.otel_lambda_http_port
-  otel_grpc_gateway_endpoint          = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_grpc_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_grpc_port}"
-  otel_http_gateway_endpoint          = var.otel_collector_env == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_http_port}"
+  otel_grpc_gateway_endpoint          = var.application_environment == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_grpc_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_grpc_port}"
+  otel_http_gateway_endpoint          = var.application_environment == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_http_port}"
   opentelemetry_collector_config_file = var.lambda_opentelemetry_collector_config_file
 
   process_media_lambda_sg = module.process_media_lambda_sg.id

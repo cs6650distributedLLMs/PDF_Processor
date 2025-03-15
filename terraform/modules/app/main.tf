@@ -290,8 +290,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           "value": "${var.otel_sidecar_health_port}"
         },
         {
-          "name": "OTEL_COLLECTOR_ENV",
-          "value": "${var.otel_collector_env}"
+          "name": "APPLICATION_ENVIRONMENT",
+          "value": "${var.application_environment}"
         }
       ],
       "portMappings": [

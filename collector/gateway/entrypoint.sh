@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [ "$OTEL_COLLECTOR_ENV" == "localstack" ]; then
+if [ "$APPLICATION_ENVIRONMENT" == "localstack" ]; then
   CONFIG_PATH="/collector/config-localstack.yaml"
 else
   CONFIG_PATH="/collector/config.yaml"

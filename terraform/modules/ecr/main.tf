@@ -66,8 +66,12 @@ resource "aws_ecr_repository_policy" "ecr_repository_policy" {
   policy     = data.aws_iam_policy_document.ecr_repository_policy_document.json
 }
 
+locals {
+  aws_cli_command = var.application_environment == "aws" ? "aws" : "awslocal"
+}
+
 resource "null_resource" "login_to_ecr" {
   provisioner "local-exec" {
-    command = "awslocal ecr get-login-password --region ${data.aws_region.current.name} | docker login --username AWS --password-stdin ${aws_ecr_repository.ecr_repository.repository_url}"
+    command = "${local.aws_cli_command} ecr get-login-password --region ${data.aws_region.current.name} | docker login --username AWS --password-stdin ${aws_ecr_repository.ecr_repository.repository_url}"
   }
 }

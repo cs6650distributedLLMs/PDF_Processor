@@ -84,8 +84,8 @@ variable "otel_http_gateway_endpoint" {
   type        = string
 }
 
-variable "otel_collector_env" {
-  description = "Environment for the OpenTelemetry collector"
+variable "application_environment" {
+  description = "Environment the application is running on. It's either LocalStack or AWS"
   type        = string
 }
 
