@@ -151,16 +151,12 @@ resource "null_resource" "build_sharp_lambda_layer" {
   }
 }
 
-locals {
-  sharp_layer_content_hash = filesha256("${var.lambdas_src_path}/sharp-layer/layer-content.zip")
-}
-
 resource "aws_lambda_layer_version" "sharp_lambda_layer" {
   depends_on          = [null_resource.build_sharp_lambda_layer]
   filename            = "${var.lambdas_src_path}/sharp-layer/layer-content.zip"
   layer_name          = "humminbird-sharp-lambda-layer"
   compatible_runtimes = ["nodejs22.x"]
-  source_code_hash    = local.sharp_layer_content_hash
+  source_code_hash    = try(filesha256("${var.lambdas_src_path}/sharp-layer/layer-content.zip"), null)
 }
 
 #######################################
@@ -177,16 +173,12 @@ resource "null_resource" "build_otel_lambda_layer" {
   }
 }
 
-locals {
-  otel_layer_content_hash = filesha256("${var.lambdas_src_path}/otel-layer/layer-content.zip")
-}
-
 resource "aws_lambda_layer_version" "otel_lambda_layer" {
   depends_on          = [null_resource.build_otel_lambda_layer]
   filename            = "${var.lambdas_src_path}/otel-layer/layer-content.zip"
   layer_name          = "humminbird-otel-lambda-layer"
   compatible_runtimes = ["nodejs22.x"]
-  source_code_hash    = local.otel_layer_content_hash
+  source_code_hash    = try(filesha256("${var.lambdas_src_path}/otel-layer/layer-content.zip"), null)
 }
 
 ########################
