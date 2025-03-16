@@ -9,7 +9,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_grpc_n
   ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-collector-allow-inbound-traffic-grpc"
+    Name = "hummingbird-collector-allow-inbound-traffic-grpc"
   })
 }
 
@@ -22,7 +22,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_grpc_n
   ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-collector-allow-inbound-traffic-grpc"
+    Name = "hummingbird-collector-allow-inbound-traffic-grpc"
   })
 }
 
@@ -35,7 +35,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_http_n
   ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-collector-allow-inbound-traffic-http"
+    Name = "hummingbird-collector-allow-inbound-traffic-http"
   })
 }
 
@@ -48,7 +48,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic_http_n
   ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-collector-allow-inbound-traffic-http"
+    Name = "hummingbird-collector-allow-inbound-traffic-http"
   })
 }
 
@@ -61,7 +61,7 @@ resource "aws_vpc_security_group_egress_rule" "allow_alb_outbound_traffic" {
   ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-collector-allow-outbound-traffic"
+    Name = "hummingbird-collector-allow-outbound-traffic"
   })
 }
 
@@ -218,7 +218,7 @@ resource "aws_vpc_security_group_egress_rule" "allow_container_outbound_traffic"
   ip_protocol       = "-1"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-container-allow-outbound-traffic"
+    Name = "hummingbird-container-allow-outbound-traffic"
   })
 }
 

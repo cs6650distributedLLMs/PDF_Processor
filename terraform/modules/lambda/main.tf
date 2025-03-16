@@ -154,7 +154,7 @@ resource "null_resource" "build_sharp_lambda_layer" {
 resource "aws_lambda_layer_version" "sharp_lambda_layer" {
   depends_on          = [null_resource.build_sharp_lambda_layer]
   filename            = "${var.lambdas_src_path}/sharp-layer/layer-content.zip"
-  layer_name          = "humminbird-sharp-lambda-layer"
+  layer_name          = "hummingbird-sharp-lambda-layer"
   compatible_runtimes = ["nodejs22.x"]
   source_code_hash    = try(filesha256("${var.lambdas_src_path}/sharp-layer/layer-content.zip"), null)
 }
@@ -176,7 +176,7 @@ resource "null_resource" "build_otel_lambda_layer" {
 resource "aws_lambda_layer_version" "otel_lambda_layer" {
   depends_on          = [null_resource.build_otel_lambda_layer]
   filename            = "${var.lambdas_src_path}/otel-layer/layer-content.zip"
-  layer_name          = "humminbird-otel-lambda-layer"
+  layer_name          = "hummingbird-otel-lambda-layer"
   compatible_runtimes = ["nodejs22.x"]
   source_code_hash    = try(filesha256("${var.lambdas_src_path}/otel-layer/layer-content.zip"), null)
 }
@@ -191,7 +191,7 @@ resource "aws_vpc_security_group_egress_rule" "allow_manage_media_lambda_outboun
   ip_protocol       = "-1"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-coll-allow-outbound-traffic-manage-media-lambda"
+    Name = "hummingbird-coll-allow-outbound-traffic-manage-media-lambda"
   })
 }
 
@@ -298,7 +298,7 @@ resource "aws_vpc_security_group_egress_rule" "allow_process_lambda_outbound_tra
   ip_protocol       = "-1"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-coll-allow-outbound-traffic-process-lambda"
+    Name = "hummingbird-coll-allow-outbound-traffic-process-lambda"
   })
 }
 

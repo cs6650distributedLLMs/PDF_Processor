@@ -9,7 +9,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_alb_inbound_traffic" {
   ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-alb-allow-inbound-traffic"
+    Name = "hummingbird-alb-allow-inbound-traffic"
   })
 }
 
@@ -22,7 +22,7 @@ resource "aws_vpc_security_group_egress_rule" "allow_alb_outbound_traffic" {
   ip_protocol       = "tcp"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-alb-allow-outbound-traffic"
+    Name = "hummingbird-alb-allow-outbound-traffic"
   })
 }
 
@@ -104,7 +104,7 @@ resource "aws_vpc_security_group_egress_rule" "allow_container_outbound_traffic"
   ip_protocol       = "-1"
 
   tags = merge(var.additional_tags, {
-    Name = "humminbird-container-allow-outbound-traffic"
+    Name = "hummingbird-container-allow-outbound-traffic"
   })
 }
 
