@@ -6,7 +6,7 @@
     "node": ">=22.13.0",
     "npm": ">=10.9.2"
   },
-  "type": "module",
+  "type": "commonjs",
   "main": "server.js",
   "scripts": {
     "start": "node --require ./_instrumentation.js server.js",

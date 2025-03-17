@@ -1,7 +1,7 @@
-import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
-import { isLocalEnv } from '../core/utils.js';
-import { EVENTS } from '../core/constants.js';
-import { getLogger } from '../logger.js';
+const { SNSClient, PublishCommand } = require('@aws-sdk/client-sns');
+const { isLocalEnv } = require('../core/utils.js');
+const { EVENTS } = require('../core/constants.js');
+const { getLogger } = require('../logger.js');
 
 const logger = getLogger();
 
@@ -16,7 +16,7 @@ const endpoint = isLocalEnv()
  * @param {object} param0.message The message to publish
  * @returns {Promise<void>}
  */
-export const publishEvent = async ({ topicArn, message }) => {
+const publishEvent = async ({ topicArn, message }) => {
   try {
     const client = new SNSClient({
       endpoint,
@@ -40,7 +40,7 @@ export const publishEvent = async ({ topicArn, message }) => {
  * @param {string} mediaId The ID of the media to delete
  * @returns {Promise<void>}
  */
-export const publishDeleteMediaEvent = async (mediaId) => {
+const publishDeleteMediaEvent = async (mediaId) => {
   const message = {
     type: EVENTS.DELETE_MEDIA.type,
     payload: { mediaId },
@@ -59,7 +59,7 @@ export const publishDeleteMediaEvent = async (mediaId) => {
  * @param {number} param0.width The width to resize the original image to
  * @returns {Promise<void>}
  */
-export const publishResizeMediaEvent = async ({ mediaId, width }) => {
+const publishResizeMediaEvent = async ({ mediaId, width }) => {
   const message = {
     type: EVENTS.RESIZE_MEDIA.type,
     payload: { mediaId, width },
@@ -69,4 +69,10 @@ export const publishResizeMediaEvent = async ({ mediaId, width }) => {
     topicArn: EVENTS.RESIZE_MEDIA.topicArn,
     message,
   });
+};
+
+module.exports = {
+  publishEvent,
+  publishDeleteMediaEvent,
+  publishResizeMediaEvent,
 };

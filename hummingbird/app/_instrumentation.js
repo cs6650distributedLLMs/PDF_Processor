@@ -1,3 +1,3 @@
-import { init } from './observability/instrumentation.js';
+const { init } = require('./observability/instrumentation.js');
 
 init();

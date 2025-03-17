@@ -1,30 +1,30 @@
-import { errors as formidableErrors } from 'formidable';
-import {
+const { errors: formidableErrors } = require('formidable');
+const {
   sendAcceptedResponse,
   sendOkResponse,
   sendErrorResponse,
   sendResponse,
   sendBadRequestResponse,
   sendNotFoundResponse,
-} from '../core/responses.js';
-import { uploadMedia } from '../actions/uploadMedia.js';
-import { convertBytesToMb } from '../core/utils.js';
-import {
+} = require('../core/responses.js');
+const { uploadMedia } = require('../actions/uploadMedia.js');
+const { convertBytesToMb } = require('../core/utils.js');
+const {
   MAX_FILE_SIZE,
   CUSTOM_FORMIDABLE_ERRORS,
   MEDIA_STATUS,
-} from '../core/constants.js';
-import { getProcessedMediaUrl } from '../clients/s3.js';
-import { createMedia, getMedia } from '../clients/dynamodb.js';
-import { getLogger } from '../logger.js';
-import {
+} = require('../core/constants.js');
+const { getProcessedMediaUrl } = require('../clients/s3.js');
+const { createMedia, getMedia } = require('../clients/dynamodb.js');
+const { getLogger } = require('../logger.js');
+const {
   publishDeleteMediaEvent,
   publishResizeMediaEvent,
-} from '../clients/sns.js';
+} = require('../clients/sns.js');
 
 const logger = getLogger();
 
-export const uploadController = async (req, res) => {
+const uploadController = async (req, res) => {
   try {
     const { mediaId, file } = await uploadMedia(req);
     const { size, originalFilename: name, mimetype } = file;
@@ -75,7 +75,7 @@ export const uploadController = async (req, res) => {
   }
 };
 
-export const statusController = async (req, res) => {
+const statusController = async (req, res) => {
   try {
     const mediaId = req.params.id;
     const media = await getMedia(mediaId);
@@ -92,7 +92,7 @@ export const statusController = async (req, res) => {
   }
 };
 
-export const downloadController = async (req, res) => {
+const downloadController = async (req, res) => {
   try {
     const mediaId = req.params.id;
 
@@ -121,7 +121,7 @@ export const downloadController = async (req, res) => {
   }
 };
 
-export const getController = async (req, res) => {
+const getController = async (req, res) => {
   try {
     const mediaId = req.params.id;
     const media = await getMedia(mediaId);
@@ -138,7 +138,7 @@ export const getController = async (req, res) => {
   }
 };
 
-export const resizeController = async (req, res) => {
+const resizeController = async (req, res) => {
   try {
     const mediaId = req.params.id;
 
@@ -159,7 +159,7 @@ export const resizeController = async (req, res) => {
   }
 };
 
-export const deleteController = async (req, res) => {
+const deleteController = async (req, res) => {
   try {
     const mediaId = req.params.id;
 
@@ -176,4 +176,13 @@ export const deleteController = async (req, res) => {
     logger.error(error);
     sendErrorResponse(res);
   }
+};
+
+module.exports = {
+  uploadController,
+  statusController,
+  downloadController,
+  getController,
+  resizeController,
+  deleteController,
 };

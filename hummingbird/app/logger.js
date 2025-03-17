@@ -1,4 +1,4 @@
-import winston from 'winston';
+const winston = require('winston');
 
 const { combine, json, timestamp } = winston.format;
 
@@ -12,7 +12,7 @@ let logger;
  * Initialize the logger.
  * @returns {void}
  */
-export const init = () => {
+const init = () => {
   logger = winston.createLogger({
     level: 'info',
     format: combine(timestamp(), json()),
@@ -25,10 +25,12 @@ export const init = () => {
  * Get the logger instance.
  * @returns {winston.Logger}
  */
-export const getLogger = () => {
+const getLogger = () => {
   if (!logger) {
     init();
   }
 
   return logger;
 };
+
+module.exports = { init, getLogger };

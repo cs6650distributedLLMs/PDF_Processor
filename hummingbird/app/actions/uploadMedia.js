@@ -1,9 +1,12 @@
-import { Transform } from 'node:stream';
-import { randomUUID } from 'node:crypto';
-import formidable, { errors as formidableErrors } from 'formidable';
-import opentelemetry from '@opentelemetry/api';
-import { uploadMediaToStorage } from '../clients/s3.js';
-import { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS } from '../core/constants.js';
+const { Transform } = require('node:stream');
+const { randomUUID } = require('node:crypto');
+const { formidable, errors: formidableErrors } = require('formidable');
+const opentelemetry = require('@opentelemetry/api');
+const { uploadMediaToStorage } = require('../clients/s3.js');
+const {
+  MAX_FILE_SIZE,
+  CUSTOM_FORMIDABLE_ERRORS,
+} = require('../core/constants.js');
 
 const tracer = opentelemetry.trace.getTracer('hummingbird-media-upload');
 const meter = opentelemetry.metrics.getMeter('hummingbird-media-upload');
@@ -19,7 +22,7 @@ const failuresCounter = meter.createCounter('media.upload.failure', {
  * @param {Request} req Express.js (Node) HTTP request object.
  * @returns {Promise<string>} The file ID.
  */
-export const uploadMedia = async (req) => {
+const uploadMedia = async (req) => {
   return new Promise((resolve, reject) => {
     try {
       tracer.startActiveSpan('upload-media-file', (span) => {
@@ -131,3 +134,5 @@ export const uploadMedia = async (req) => {
     }
   });
 };
+
+module.exports = { uploadMedia };

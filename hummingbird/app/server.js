@@ -1,7 +1,7 @@
-import 'dotenv/config';
-import express from 'express';
-import mediaRoutes from './routes/media.js';
-import { init as initializeLogger, getLogger } from './logger.js';
+require('dotenv').config();
+const express = require('express');
+const mediaRoutes = require('./routes/media.js');
+const { init: initializeLogger, getLogger } = require('./logger.js');
 
 initializeLogger();
 const logger = getLogger();

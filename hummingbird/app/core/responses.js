@@ -1,29 +1,39 @@
-export const sendOkResponse = (res, data) => {
+const sendOkResponse = (res, data) => {
   res.status(200).send(data);
 };
 
-export const sendAcceptedResponse = (res, data) => {
+const sendAcceptedResponse = (res, data) => {
   res.status(202).send(data);
 };
 
-export const sendNoContentResponse = (res) => {
+const sendNoContentResponse = (res) => {
   res.status(204).send();
 };
 
-export const sendBadRequestResponse = (res, error) => {
+const sendBadRequestResponse = (res, error) => {
   res.status(400).send({ message: error?.message || 'Bad request' });
 };
 
-export const sendNotFoundResponse = (res) => {
+const sendNotFoundResponse = (res) => {
   res.status(404).send({ message: 'Not found' });
 };
 
-export const sendResponse = (res, status, message) => {
+const sendResponse = (res, status, message) => {
   res.status(status).send({ message });
 };
 
-export const sendErrorResponse = (res, error) => {
+const sendErrorResponse = (res, error) => {
   res
     .status(error?.status || 500)
     .send(error?.message || 'Internal server error');
+};
+
+module.exports = {
+  sendOkResponse,
+  sendAcceptedResponse,
+  sendNoContentResponse,
+  sendBadRequestResponse,
+  sendNotFoundResponse,
+  sendResponse,
+  sendErrorResponse,
 };

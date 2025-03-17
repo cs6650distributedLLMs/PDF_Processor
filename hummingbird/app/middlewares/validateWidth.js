@@ -1,5 +1,5 @@
-import { sendBadRequestResponse } from '../core/responses.js';
-import { MEDIA_WIDTH } from '../core/constants.js';
+const { sendBadRequestResponse } = require('../core/responses.js');
+const { MEDIA_WIDTH } = require('../core/constants.js');
 
 const { MAX_MEDIA_WIDTH, MIN_MEDIA_WIDTH } = MEDIA_WIDTH;
 
@@ -46,4 +46,4 @@ const validMediaWidth = (width) => {
   return intMediaWidth >= MIN_MEDIA_WIDTH && intMediaWidth <= MAX_MEDIA_WIDTH;
 };
 
-export default middleware;
+module.exports =  middleware;

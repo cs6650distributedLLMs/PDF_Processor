@@ -1,13 +1,13 @@
-import {
+const {
   DeleteItemCommand,
   DynamoDBClient,
   GetItemCommand,
   PutItemCommand,
   UpdateItemCommand,
-} from '@aws-sdk/client-dynamodb';
-import { isLocalEnv } from '../core/utils.js';
-import { MEDIA_STATUS } from '../core/constants.js';
-import { getLogger } from '../logger.js';
+} = require('@aws-sdk/client-dynamodb');
+const { isLocalEnv } = require('../core/utils.js');
+const { MEDIA_STATUS } = require('../core/constants.js');
+const { getLogger } = require('../logger.js');
 
 const logger = getLogger();
 
@@ -25,7 +25,7 @@ const endpoint = isLocalEnv()
  * @param {number} param0.width The size to resize the uploaded image to
  * @returns {Promise<void>}
  */
-export const createMedia = async ({ mediaId, size, name, mimetype, width }) => {
+const createMedia = async ({ mediaId, size, name, mimetype, width }) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
   const command = new PutItemCommand({
     TableName,
@@ -58,7 +58,7 @@ export const createMedia = async ({ mediaId, size, name, mimetype, width }) => {
  * @param {string} mediaId The media ID.
  * @returns {Promise<object>} The media object metadata.
  */
-export const getMedia = async (mediaId) => {
+const getMedia = async (mediaId) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
   const command = new GetItemCommand({
     TableName,
@@ -101,7 +101,7 @@ export const getMedia = async (mediaId) => {
  * @param {string} param0.expectedCurrentStatus The expected current status
  * @returns {Promise<object>}
  */
-export const setMediaStatusConditionally = async ({
+const setMediaStatusConditionally = async ({
   mediaId,
   newStatus,
   expectedCurrentStatus,
@@ -151,7 +151,7 @@ export const setMediaStatusConditionally = async ({
  * @param {string} param0.newStatus The new status to set
  * @returns {Promise<void>}
  */
-export const setMediaStatus = async ({ mediaId, newStatus }) => {
+const setMediaStatus = async ({ mediaId, newStatus }) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
   const command = new UpdateItemCommand({
     TableName,
@@ -182,7 +182,7 @@ export const setMediaStatus = async ({ mediaId, newStatus }) => {
  * @param {string} mediaId The media ID
  * @returns {Promise<object>}
  */
-export const deleteMedia = async (mediaId) => {
+const deleteMedia = async (mediaId) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
   const command = new DeleteItemCommand({
     TableName,
@@ -213,4 +213,12 @@ export const deleteMedia = async (mediaId) => {
     logger.error(error);
     throw error;
   }
+};
+
+module.exports = {
+  createMedia,
+  getMedia,
+  setMediaStatusConditionally,
+  setMediaStatus,
+  deleteMedia,
 };

@@ -1,14 +1,14 @@
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { Resource } from '@opentelemetry/resources';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
-import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
-import { ATTR_DEPLOYMENT_ENVIRONMENT_NAME } from '@opentelemetry/semantic-conventions/incubating';
-import { awsEcsDetector } from '@opentelemetry/resource-detector-aws';
+const { NodeSDK } = require('@opentelemetry/sdk-node');
+const { Resource } = require('@opentelemetry/resources');
+const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
+const { PeriodicExportingMetricReader } = require('@opentelemetry/sdk-metrics');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-proto');
+const { OTLPMetricExporter } = require('@opentelemetry/exporter-metrics-otlp-proto');
+const { ATTR_SERVICE_NAME } = require('@opentelemetry/semantic-conventions');
+const { ATTR_DEPLOYMENT_ENVIRONMENT_NAME } = require('@opentelemetry/semantic-conventions/incubating');
+const { awsEcsDetector } = require('@opentelemetry/resource-detector-aws');
 
-export const init = () => {
+const init = () => {
   const sdk = new NodeSDK({
     resource: new Resource({
       [ATTR_SERVICE_NAME]: 'hummingbird',
@@ -44,3 +44,5 @@ export const init = () => {
       });
   });
 };
+
+module.exports = { init }

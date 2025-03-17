@@ -1,12 +1,12 @@
-import {
+const {
   DeleteObjectCommand,
   GetObjectCommand,
   S3Client,
-} from '@aws-sdk/client-s3';
-import { Upload } from '@aws-sdk/lib-storage';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { isLocalEnv } from '../core/utils.js';
-import { getLogger } from '../logger.js';
+} = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { isLocalEnv } = require('../core/utils.js');
+const { getLogger } = require('../logger.js');
 
 const logger = getLogger();
 
@@ -23,7 +23,7 @@ const endpoint = isLocalEnv()
  * @param {string} param0.keyPrefix The prefix to use in the S3 key
  * @returns Promise<CompleteMultipartUploadCommandOutput>
  */
-export const uploadMediaToStorage = ({
+const uploadMediaToStorage = ({
   mediaId,
   mediaName,
   body,
@@ -56,7 +56,7 @@ export const uploadMediaToStorage = ({
  * @param {string} param0.mediaName The name of the media file
  * @returns {Promise<string>} The signed URL.
  */
-export const getProcessedMediaUrl = async ({ mediaId, mediaName }) => {
+const getProcessedMediaUrl = async ({ mediaId, mediaName }) => {
   try {
     const client = new S3Client({
       endpoint,
@@ -87,7 +87,7 @@ export const getProcessedMediaUrl = async ({ mediaId, mediaName }) => {
  * @param {string} param0.mediaName The name of the media file
  * @returns {Promise<Uint8Array>} The media file stream
  */
-export const getMediaFile = async ({ mediaId, mediaName }) => {
+const getMediaFile = async ({ mediaId, mediaName }) => {
   try {
     const client = new S3Client({
       endpoint,
@@ -115,7 +115,7 @@ export const getMediaFile = async ({ mediaId, mediaName }) => {
  * @param {string} param0.keyPrefix The prefix to use in the S3 key
  * @returns {Promise<void>}
  */
-export const deleteMediaFile = async ({
+const deleteMediaFile = async ({
   mediaId,
   mediaName,
   keyPrefix = 'uploads',
@@ -136,4 +136,11 @@ export const deleteMediaFile = async ({
     logger.error(error);
     throw error;
   }
+};
+
+module.exports = {
+  uploadMediaToStorage,
+  getProcessedMediaUrl,
+  getMediaFile,
+  deleteMediaFile,
 };

@@ -1,14 +1,14 @@
-import { Router } from 'express';
-import {
+const { Router } = require('express');
+const {
   deleteController,
   downloadController,
   getController,
   resizeController,
   statusController,
   uploadController,
-} from '../controllers/media.js';
-import setMediaWidth from '../middlewares/setMediaWidth.js';
-import validateWidth from '../middlewares/validateWidth.js';
+} = require('../controllers/media.js');
+const setMediaWidth = require('../middlewares/setMediaWidth.js');
+const validateWidth = require('../middlewares/validateWidth.js');
 
 const router = Router();
 
@@ -24,4 +24,4 @@ router.put('/:id/resize', validateWidth, setMediaWidth, resizeController);
 
 router.delete('/:id', deleteController);
 
-export default router;
+module.exports = router;

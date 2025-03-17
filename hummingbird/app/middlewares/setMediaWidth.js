@@ -1,4 +1,4 @@
-import { MEDIA_WIDTH } from '../core/constants.js';
+const { MEDIA_WIDTH } = require('../core/constants.js');
 
 const { DEFAULT_MEDIA_WIDTH } = MEDIA_WIDTH;
 
@@ -23,4 +23,4 @@ const middleware = (req, res, next) => {
   next();
 };
 
-export default middleware;
+module.exports =  middleware;
