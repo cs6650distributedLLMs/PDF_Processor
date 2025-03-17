@@ -238,7 +238,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
         {"name": "MEDIA_DYNAMODB_TABLE_NAME", "value": "${var.dynamodb_table_name}"},
         {"name": "NODE_ENV", "value": "${var.node_env}"},
         {"name": "OTEL_EXPORTER_OTLP_PROTOCOL", "value": "http/protobuf"},
-        {"name": "OTEL_EXPORTER_OTLP_ENDPOINT", "value": "http://${var.otel_exporter_hostame}:${var.otel_sidecar_http_port}"}
+        {"name": "OTEL_EXPORTER_OTLP_ENDPOINT", "value": "http://${var.otel_exporter_hostame}:${var.otel_sidecar_http_port}"},
+        {"name": "OTEL_SEMCONV_STABILITY_OPT_IN", "value": "http"}
       ],
       "portMappings": [
         {
