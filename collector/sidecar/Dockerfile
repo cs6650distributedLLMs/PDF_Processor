@@ -1,4 +1,4 @@
-FROM amazon/aws-otel-collector:v0.39.0 AS adot-base
+FROM amazon/aws-otel-collector:v0.43.0 AS adot-base
 
 FROM alpine:latest
 

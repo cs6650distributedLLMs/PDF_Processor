@@ -6,7 +6,7 @@ RUN apk add --no-cache bash curl
 
 WORKDIR /collector
 
-ENV OTEL_COLLECTOR_VERSION=0.98.0
+ENV OTEL_COLLECTOR_VERSION=0.117.0
 ENV OTEL_COLLECTOR_TAR_FILE=otelcol-contrib_${OTEL_COLLECTOR_VERSION}_linux_amd64.tar.gz
 ENV OTEL_COLLECTOR_BIN_PATH="/collector/otelcol-contrib"
 ENV OTEL_COLLECTOR_CONFIG_PATH="/collector/config.yaml"
