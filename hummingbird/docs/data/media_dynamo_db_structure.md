@@ -4,11 +4,15 @@ The `media` table contains all metadata for media files uploaded to Hummingbird.
 
 ## Entities
 
-| Entity | PK                 | SK       |
-| ------ | ------------------ | -------- |
-| media  | MEDIA#\<media_id\> | METADATA |
+| PK                 | SK       |
+|--------------------|----------|
+| MEDIA#\<media_id\> | METADATA |
 
-## Media Example
+Notice that the DynamoDB table schema only requires PK (primary key) and SK (sort key) for a record to be stored.
+All other values, such as `size` and `name`, are schemaless: they are not defined in the schema and records may or may
+not include those fields.
+
+## Dynamo Query Examples
 
 #### Create new media
 
@@ -22,7 +26,8 @@ cat << EOF > $INPUT
     size: { N: 12345 }
     name: { S: image.png }
     mimetype: { S: image/png }
-    bucket: { S: media-bucket }
+    status: { S: PENDING }
+    width: { N: 1024 }
 EOF
 aws dynamodb put-item --cli-input-yaml file://$INPUT
 rm -f $INPUT
