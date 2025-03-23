@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Processing Results</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+  <body>
+    <div class="container mt-5">
+      <div class="row">
+        <div class="col-md-10 offset-md-1">
+          <div class="card">
+            <div class="card-header bg-primary text-white">
+              <h2 class="text-center">Processing Results</h2>
+            </div>
+            <div class="card-body">
+              <div class="mb-4">
+                <h3>Job ID: <span class="text-muted">{{ job_id }}</span></h3>
+                <h4>File: <span class="text-muted">{{ job.filename }}</span></h4>
+
+                <div class="mt-3">
+                  <div class="progress" style="height: 30px">
+                    {% if job.status == 'uploaded' %}
+                    <div
+                      class="progress-bar progress-bar-striped progress-bar-animated"
+                      role="progressbar"
+                      style="width: 25%"
+                    >
+                      File Uploaded
+                    </div>
+                    {% elif job.status == 'ocr_processing' %}
+                    <div
+                      class="progress-bar progress-bar-striped progress-bar-animated"
+                      role="progressbar"
+                      style="width: 50%"
+                    >
+                      OCR Processing
+                    </div>
+                    {% elif job.status == 'ocr_completed' or job.status == 'summarizing' %}
+                    <div
+                      class="progress-bar progress-bar-striped progress-bar-animated"
+                      role="progressbar"
+                      style="width: 75%"
+                    >
+                      Generating Summary
+                    </div>
+                    {% elif job.status == 'completed' %}
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%">Completed</div>
+                    {% elif 'failed' in job.status %}
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: 100%">Failed</div>
+                    {% endif %}
+                  </div>
+
+                  <p class="mt-2 text-center" id="status-message">
+                    Status: <strong>{{ job.status }}</strong>
+                    {% if 'failed' in job.status and job.error %} - Error: {{ job.error }} {% endif %}
+                  </p>
+                </div>
+              </div>
+
+              {% if job.status == 'completed' %}
+              <div class="row mt-4">
+                <div class="col-md-12">
+                  <div class="card">
+                    <div class="card-header bg-success text-white">
+                      <h5 class="mb-0">Document Summary</h5>
+                    </div>
+                    <div class="card-body" id="summary-content">
+                      <div class="text-center">
+                        <div class="spinner-border" role="status">
+                          <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Loading summary...</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% else %}
+              <div class="alert alert-info">Processing your document... This page will automatically update.</div>
+              {% endif %}
+
+              <div class="text-center mt-4">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">Process Another Document</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+      // Auto-refresh status
+      const jobId = "{{ job_id }}";
+      const currentStatus = "{{ job.status }}";
+
+      // Don't refresh if already completed or failed
+      if (currentStatus !== "completed" && !currentStatus.includes("failed")) {
+        setTimeout(function () {
+          location.reload();
+        }, 5000); // Refresh every 5 seconds
+      }
+
+      // Load the summary content if completed
+      if (currentStatus === "completed") {
+        fetch(`/api/summary/${jobId}`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.summary) {
+              const summaryContent = document.getElementById("summary-content");
+              summaryContent.innerHTML = `<pre class="summary-text">${data.summary}</pre>`;
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching summary:", error);
+            document.getElementById("summary-content").innerHTML =
+              '<div class="alert alert-danger">Error loading summary. Please try again.</div>';
+          });
+      }
+    </script>
+  </body>
+</html>
