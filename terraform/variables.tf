@@ -20,7 +20,7 @@ variable "media_s3_bucket_name" {
   type        = string
 }
 
-variable "media_dymamo_table_name" {
+variable "media_dynamo_table_name" {
   description = "Name of the DynamoDB table for media metadata"
   type        = string
 }

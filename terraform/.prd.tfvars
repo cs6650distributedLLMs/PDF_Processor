@@ -13,6 +13,6 @@ otel_sidecar_http_port                     = 4320
 otel_sidecar_health_port                   = 13134
 otel_lambda_grpc_port                      = 4321
 otel_lambda_http_port                      = 4322
-media_dymamo_table_name                    = "hummingbird-app-table"
+media_dynamo_table_name                    = "hummingbird-app-table"
 media_s3_bucket_name                       = "hummingbird-app-media-bucket"
 node_env                                   = "production"

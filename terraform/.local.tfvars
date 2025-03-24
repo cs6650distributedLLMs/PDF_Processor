@@ -1,5 +1,5 @@
 aws_region                                 = "us-west-2"
-desired_task_count                         = 1
+desired_task_count                         = 2
 grafana_cloud_instance_id                  = 1185300
 grafana_otel_endpoint                      = "http://host.docker.internal:4318"
 hummingbird_app_port                       = 9000
@@ -14,6 +14,6 @@ otel_sidecar_http_port                     = 4320
 otel_sidecar_health_port                   = 13134
 otel_lambda_grpc_port                      = 4321
 otel_lambda_http_port                      = 4322
-media_dymamo_table_name                    = "hummingbird-app-table"
+media_dynamo_table_name                    = "hummingbird-app-table"
 media_s3_bucket_name                       = "hummingbird-app-media-bucket"
 node_env                                   = "development"

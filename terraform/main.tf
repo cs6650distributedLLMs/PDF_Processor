@@ -140,7 +140,7 @@ module "dynamodb" {
   source                  = "./modules/dynamodb"
   additional_tags         = local.common_tags
   vpc_id                  = module.networking.vpc_id
-  dynamodb_table_name     = var.media_dymamo_table_name
+  dynamodb_table_name     = var.media_dynamo_table_name
   private_route_table_ids = module.networking.private_route_table_ids
 }
 
