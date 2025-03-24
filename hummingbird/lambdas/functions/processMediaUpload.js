@@ -13,7 +13,20 @@ const { init: initializeLogger, getLogger } = require('../logger.js');
 initializeLogger({ service: 'processMediaUploadLambda' });
 const logger = getLogger();
 
-const tracer = opentelemetry.trace.getTracer('process-media-upload-lambda');
+const tracer = opentelemetry.trace.getTracer(
+  'hummingbird-process-media-upload-lambda'
+);
+const meter = opentelemetry.metrics.getMeter(
+  'hummingbird-async-media-processing-lambda'
+);
+const successesCounter = meter.createCounter('media.async.process.success', {
+  description: 'Count of successfully processed media files',
+});
+const failuresCounter = meter.createCounter('media.async.process.failure', {
+  description: 'Count of failed processed media files',
+});
+
+const metricScope = 'processMediaUploadLambda';
 
 /**
  * Gets the handler for the processMediaUpload Lambda function.
@@ -80,16 +93,25 @@ const getHandler = () => {
 
         logger.info(`Done processing media ${mediaId}.`);
 
+        successesCounter.add(1, {
+          scope: metricScope,
+        });
         span.setStatus({ code: opentelemetry.SpanStatusCode.OK });
         span.end();
       } catch (error) {
         span.setStatus({ code: opentelemetry.SpanStatusCode.ERROR });
 
         if (error instanceof ConditionalCheckFailedException) {
-          span.end();
           logger.error(
             `Media ${mediaId} not found or status is not ${MEDIA_STATUS.PROCESSING}.`
           );
+
+          span.end();
+          failuresCounter.add(1, {
+            scope: metricScope,
+            reason: 'CONDITIONAL_CHECK_FAILURE',
+          });
+
           throw error;
         }
 
@@ -99,7 +121,12 @@ const getHandler = () => {
         });
 
         logger.error(`Failed to process media ${mediaId}`, error);
+
         span.end();
+        failuresCounter.add(1, {
+          scope: metricScope,
+        });
+
         throw error;
       }
     });

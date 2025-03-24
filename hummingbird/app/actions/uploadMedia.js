@@ -11,10 +11,10 @@ const {
 const tracer = opentelemetry.trace.getTracer('hummingbird-media-upload');
 const meter = opentelemetry.metrics.getMeter('hummingbird-media-upload');
 const successesCounter = meter.createCounter('media.upload.success', {
-  description: 'Number of successful media uploads',
+  description: 'Count of successful media uploads',
 });
 const failuresCounter = meter.createCounter('media.upload.failure', {
-  description: 'Number of failed media uploads',
+  description: 'Count of failed media uploads',
 });
 
 /**

@@ -10,6 +10,18 @@ const { setMediaStatus } = require('../clients/dynamodb');
 
 const logger = getLogger();
 
+const meter = opentelemetry.metrics.getMeter(
+  'hummingbird-async-media-processing-lambda'
+);
+const successesCounter = meter.createCounter('media.async.process.success', {
+  description: 'Count of successfully processed media files',
+});
+const failuresCounter = meter.createCounter('media.async.process.failure', {
+  description: 'Count of failed processed media files',
+});
+
+const metricScope = 'resizeMediaHandler';
+
 /**
  * Resize a media file to the specified width.
  * @param {object} param0 The function parameters
@@ -71,6 +83,9 @@ const resizeMediaHandler = async ({ mediaId, width, span }) => {
 
     logger.info(`Resized media ${mediaId}.`);
     span.setStatus({ code: opentelemetry.SpanStatusCode.OK });
+    successesCounter.add(1, {
+      scope: metricScope,
+    });
   } catch (error) {
     span.setStatus({ code: opentelemetry.SpanStatusCode.ERROR });
 
@@ -79,6 +94,10 @@ const resizeMediaHandler = async ({ mediaId, width, span }) => {
         `Media ${mediaId} not found or status is not ${MEDIA_STATUS.PROCESSING}.`
       );
       span.end();
+      failuresCounter.add(1, {
+        scope: metricScope,
+        reason: 'CONDITIONAL_CHECK_FAILURE',
+      });
       throw error;
     }
 
@@ -89,6 +108,9 @@ const resizeMediaHandler = async ({ mediaId, width, span }) => {
 
     logger.error(`Failed to resize media ${mediaId}`, error);
     span.end();
+    failuresCounter.add(1, {
+      scope: metricScope,
+    });
     throw error;
   }
 };

@@ -7,6 +7,18 @@ const { getLogger } = require('../logger');
 
 const logger = getLogger();
 
+const meter = opentelemetry.metrics.getMeter(
+  'hummingbird-async-media-processing-lambda'
+);
+const successesCounter = meter.createCounter('media.async.process.success', {
+  description: 'Count of successfully processed media files',
+});
+const failuresCounter = meter.createCounter('media.async.process.failure', {
+  description: 'Count of failed processed media files',
+});
+
+const metricScope = 'deleteMediaHandler';
+
 /**
  * Delete media from storage.
  * @param {object} param0 The function parameters
@@ -43,10 +55,18 @@ const deleteMediaHandler = async ({ mediaId, span }) => {
 
     logger.info(`Deleted media with id ${mediaId}.`);
     span.setStatus({ code: opentelemetry.SpanStatusCode.OK });
+    successesCounter.add(1, {
+      scope: metricScope,
+    });
   } catch (error) {
-    span.setStatus({ code: opentelemetry.SpanStatusCode.ERROR });
     logger.error(`Error while deleting media with id ${mediaId}.`, error);
+
+    span.setStatus({ code: opentelemetry.SpanStatusCode.ERROR });
     span.end();
+    failuresCounter.add(1, {
+      scope: metricScope,
+    });
+
     throw error;
   }
 };
