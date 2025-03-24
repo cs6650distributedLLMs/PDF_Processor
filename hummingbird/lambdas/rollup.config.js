@@ -8,6 +8,7 @@ module.exports = {
     file: 'dist/index.js',
     compact: true,
     format: 'cjs',
+    inlineDynamicImports: true,
   },
   plugins: [json(), nodeResolve({ preferBuiltins: true }), commonjs()],
   external: [
