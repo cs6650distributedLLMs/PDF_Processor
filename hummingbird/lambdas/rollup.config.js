@@ -15,6 +15,11 @@ module.exports = {
     '@aws-sdk/client-dynamodb',
     '@aws-sdk/client-s3',
     '@aws-sdk/lib-storage',
+    '@opentelemetry/api-logs',
+    '@opentelemetry/sdk-logs',
+    '@opentelemetry/exporter-logs-otlp-http',
+    '@opentelemetry/winston-transport',
+    '@opentelemetry/resources',
     'sharp',
   ],
   onwarn(warning, warn) {

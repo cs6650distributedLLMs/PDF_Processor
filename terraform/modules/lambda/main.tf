@@ -113,7 +113,7 @@ locals {
   }
   combined_hash_input   = join("", values(local.file_hashes))
   source_directory_hash = sha256(local.combined_hash_input)
-  lambda_zip_file       = "lambda-functions-payload.zip"
+  lambda_zip_file       = "${var.lambdas_src_path}/lambda-functions-payload.zip"
 }
 
 resource "null_resource" "build_lambda_bundle" {
@@ -138,10 +138,15 @@ data "archive_file" "lambda" {
 #######################################
 # Build lambda layer for sharp module #
 #######################################
+locals {
+  sharp_layer_dir_path = "${var.lambdas_src_path}/sharp-layer"
+  sharp_layer_zip_file = "${local.sharp_layer_dir_path}/lambda-sharp-layer.zip"
+}
+
 resource "null_resource" "build_sharp_lambda_layer" {
   provisioner "local-exec" {
     command     = "sh build-lambda-layer.sh"
-    working_dir = "${var.lambdas_src_path}/sharp-layer"
+    working_dir = local.sharp_layer_dir_path
   }
 
   triggers = {
@@ -151,19 +156,24 @@ resource "null_resource" "build_sharp_lambda_layer" {
 
 resource "aws_lambda_layer_version" "sharp_lambda_layer" {
   depends_on          = [null_resource.build_sharp_lambda_layer]
-  filename            = "${var.lambdas_src_path}/sharp-layer/layer-content.zip"
+  filename            = local.sharp_layer_zip_file
   layer_name          = "hummingbird-sharp-lambda-layer"
   compatible_runtimes = ["nodejs22.x"]
-  source_code_hash    = try(filesha256("${var.lambdas_src_path}/sharp-layer/layer-content.zip"), null)
+  source_code_hash    = local.source_directory_hash
 }
 
 #######################################
 # Build lambda layer for otel module #
 #######################################
+locals {
+  otel_layer_dir_path = "${var.lambdas_src_path}/otel-layer"
+  otel_layer_zip_file = "${local.otel_layer_dir_path}/lambda-otel-layer.zip"
+}
+
 resource "null_resource" "build_otel_lambda_layer" {
   provisioner "local-exec" {
     command     = "sh build-lambda-layer.sh"
-    working_dir = "${var.lambdas_src_path}/otel-layer"
+    working_dir = local.otel_layer_dir_path
   }
 
   triggers = {
@@ -173,10 +183,10 @@ resource "null_resource" "build_otel_lambda_layer" {
 
 resource "aws_lambda_layer_version" "otel_lambda_layer" {
   depends_on          = [null_resource.build_otel_lambda_layer]
-  filename            = "${var.lambdas_src_path}/otel-layer/layer-content.zip"
+  filename            = local.otel_layer_zip_file
   layer_name          = "hummingbird-otel-lambda-layer"
   compatible_runtimes = ["nodejs22.x"]
-  source_code_hash    = try(filesha256("${var.lambdas_src_path}/otel-layer/layer-content.zip"), null)
+  source_code_hash    = local.source_directory_hash
 }
 
 ########################

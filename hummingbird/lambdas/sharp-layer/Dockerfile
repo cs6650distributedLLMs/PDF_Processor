@@ -11,4 +11,4 @@ RUN npm install --include=optional --cpu=x64 --os=linux sharp
 
 RUN mkdir -p nodejs/node22/
 RUN cp -r node_modules nodejs/node22/
-RUN zip -r layer-content.zip nodejs
+RUN zip -r lambda-sharp-layer.zip nodejs

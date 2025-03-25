@@ -94,7 +94,8 @@ web_modules/
 
 # Bundled lambdas
 lambda-functions-payload.zip
-layer-content.zip
+*-layer.zip
+nodejs/
 
 # Lambda dist files
 hummingbird/lambdas/dist/index.js
