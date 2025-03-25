@@ -6,7 +6,7 @@ const resizeMediaHandler = require('../eventHandlers/resizeMediaHandler.js');
 
 const tracer = opentelemetry.trace.getTracer('manage-media-lambda');
 
-initializeLogger({ service: 'manageMediaLambda' });
+initializeLogger({ service: process.env.AWS_LAMBDA_FUNCTION_NAME });
 const logger = getLogger();
 
 const DELETE_EVENT_TYPE = 'media.v1.delete';

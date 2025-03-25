@@ -11,7 +11,7 @@ const { MEDIA_STATUS } = require('../constants.js');
 const { init: initializeLogger, getLogger } = require('../logger.js');
 const { successesCounter, failuresCounter } = require('../observability.js');
 
-initializeLogger({ service: 'processMediaUploadLambda' });
+initializeLogger({ service: process.env.AWS_LAMBDA_FUNCTION_NAME });
 const logger = getLogger();
 
 const tracer = opentelemetry.trace.getTracer(
