@@ -7,18 +7,13 @@ const { setMediaStatusConditionally } = require('../clients/dynamodb.js');
 const { getMediaFile, uploadMediaToStorage } = require('../clients/s3.js');
 const { MEDIA_STATUS } = require('../constants.js');
 const { setMediaStatus } = require('../clients/dynamodb');
+const { successesCounter, failuresCounter } = require('../observability.js');
 
 const logger = getLogger();
 
 const meter = opentelemetry.metrics.getMeter(
   'hummingbird-async-media-processing-lambda'
 );
-const successesCounter = meter.createCounter('media.async.process.success', {
-  description: 'Count of successfully processed media files',
-});
-const failuresCounter = meter.createCounter('media.async.process.failure', {
-  description: 'Count of failed processed media files',
-});
 
 const metricScope = 'resizeMediaHandler';
 
@@ -112,6 +107,10 @@ const resizeMediaHandler = async ({ mediaId, width, span }) => {
       scope: metricScope,
     });
     throw error;
+  } finally {
+    logger.info('Flushing OpenTelemetry signals');
+    await global.customInstrumentation.metricReader.forceFlush();
+    await global.customInstrumentation.traceExporter.forceFlush();
   }
 };
 

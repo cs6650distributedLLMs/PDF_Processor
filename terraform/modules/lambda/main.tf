@@ -234,10 +234,11 @@ resource "aws_lambda_function" "manage_media" {
 
   environment {
     variables = {
-      AWS_LAMBDA_EXEC_WRAPPER             = "/opt/otel-handler"
-      MEDIA_BUCKET_NAME                   = var.media_s3_bucket_name
-      MEDIA_DYNAMODB_TABLE_NAME           = var.dynamodb_table_name
-      NODE_OPTIONS                        = "--require @aws/aws-distro-opentelemetry-node-autoinstrumentation/register"
+      AWS_LAMBDA_EXEC_WRAPPER   = "/opt/otel-handler"
+      MEDIA_BUCKET_NAME         = var.media_s3_bucket_name
+      MEDIA_DYNAMODB_TABLE_NAME = var.dynamodb_table_name
+      # NODE_OPTIONS                        = "--require @aws/aws-distro-opentelemetry-node-autoinstrumentation/register"
+      NODE_OPTIONS                        = "--require instrumentation.js"
       OTEL_EXPORTER_OTLP_PROTOCOL         = "http/protobuf"
       OTEL_EXPORTER_OTLP_ENDPOINT         = "http://localhost:${var.otel_lambda_http_port}"
       OTEL_GATEWAY_GRPC_ENDPOINT          = var.otel_grpc_gateway_endpoint
@@ -345,10 +346,11 @@ resource "aws_lambda_function" "process_media" {
 
   environment {
     variables = {
-      AWS_LAMBDA_EXEC_WRAPPER             = "/opt/otel-handler"
-      MEDIA_BUCKET_NAME                   = var.media_s3_bucket_name
-      MEDIA_DYNAMODB_TABLE_NAME           = var.dynamodb_table_name
-      NODE_OPTIONS                        = "--require @aws/aws-distro-opentelemetry-node-autoinstrumentation/register"
+      AWS_LAMBDA_EXEC_WRAPPER   = "/opt/otel-handler"
+      MEDIA_BUCKET_NAME         = var.media_s3_bucket_name
+      MEDIA_DYNAMODB_TABLE_NAME = var.dynamodb_table_name
+      # NODE_OPTIONS                        = "--require @aws/aws-distro-opentelemetry-node-autoinstrumentation/register"
+      NODE_OPTIONS                        = "--require instrumentation.js"
       OTEL_EXPORTER_OTLP_PROTOCOL         = "http/protobuf"
       OTEL_EXPORTER_OTLP_ENDPOINT         = "http://localhost:${var.otel_lambda_http_port}"
       OTEL_GATEWAY_GRPC_ENDPOINT          = var.otel_grpc_gateway_endpoint
