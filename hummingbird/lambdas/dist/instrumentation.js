@@ -14,6 +14,7 @@ const { ATTR_SERVICE_NAME } = require('@opentelemetry/semantic-conventions');
 const {
   ATTR_DEPLOYMENT_ENVIRONMENT_NAME,
 } = require('@opentelemetry/semantic-conventions/incubating');
+const { awsLambdaDetector } = require('@opentelemetry/resource-detector-aws')
 
 const traceExporter = new OTLPTraceExporter();
 const metricReader = new PeriodicExportingMetricReader({
@@ -31,6 +32,7 @@ const init = () => {
       [ATTR_SERVICE_NAME]: process.env.AWS_LAMBDA_FUNCTION_NAME,
       [ATTR_DEPLOYMENT_ENVIRONMENT_NAME]: process.env.NODE_ENV,
     }),
+    resourceDetectors: [awsLambdaDetector],
     traceExporter,
     metricReader,
     instrumentations: [
