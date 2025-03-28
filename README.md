@@ -115,9 +115,10 @@ from leangaurav.
 
 # Getting Started
 
-## Configure Local Environment 
+## Configure Local Environment
 
-Run the command below to create the required environment/secret files, initialize the Terraform workspaces, and other needed
+Run the command below to create the required environment/secret files, initialize the Terraform workspaces, and other
+needed
 configurations.
 
 Environment-specific files ignored by Git and won't be included in the repository.
@@ -195,3 +196,10 @@ Once the application started, perform several requests to generate enough teleme
 to visualize the telemetry in a locally hosted Grafana instance.
 
 ![An screenshot from the Grafana UI showing a table with OpenTelemetry traces.](images/grafana-traces-screenshot.png)
+
+A simple dashboard is available [here](hummingbird/docs/observability/grafana-dashboard.json). Access the dashboard
+feature in Grafana and import the JSON file. A dashboard similar
+to the own shown below is created. Execute several requests against the RESTFul API to collect metrics, traces, and
+logs.
+
+![An screenshot from the Grafana UI showing a dashboard with the metrics, traces, and logs.](images/grafana-dashboard-screenshot.png)
