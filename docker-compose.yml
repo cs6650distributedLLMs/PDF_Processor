@@ -7,6 +7,7 @@ services:
       - '127.0.0.1:4510-4559:4510-4559'
       - '127.0.0.1:443:443'
     environment:
+      - MAIN_CONTAINER_NAME=localstack
       - DEBUG=1
       - IAM_SOFT_MODE=1
       # - ENFORCE_IAM=1
