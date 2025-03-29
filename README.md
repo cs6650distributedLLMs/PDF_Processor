@@ -5,7 +5,7 @@ This application allows users to upload PDF documents, extract text using OCR, a
 ## Features
 
 - PDF document upload
-- Text extraction using OCR (PyMuPDF + Tesseract)
+- Text extraction using OCR (Magic_pdf / MinerU)
 - Text summarization using Grok X AI API
 - Simple web interface for uploading and viewing results
 - Asynchronous processing with a message queue system

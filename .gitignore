@@ -154,3 +154,5 @@ cython_debug/
 
 # Documents
 uploads/
+output_images/
+output/

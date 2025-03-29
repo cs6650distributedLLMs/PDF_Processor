@@ -10,7 +10,7 @@ from magic_pdf.config.enums import SupportedPdfParseMethod
 
 def extract_text_from_pdf(pdf_path):
     """
-    Extract text from PDF using MinerU OCR technology and save JSON results to current directory
+    Extract text from PDF using MinerU OCR technology and save JSON results to output/{document_id}/ directory
 
     Args:
         pdf_path (str): Path to the PDF file
@@ -21,22 +21,24 @@ def extract_text_from_pdf(pdf_path):
     print(f"Processing PDF: {pdf_path}")
 
     try:
-        # Set up output directories
-        # Use current directory instead of temp dir
-        current_dir = os.getcwd()
-        local_image_dir = os.path.join(current_dir, "output_images")
-        local_md_dir = current_dir
-        image_dir = "output_images"  # Relative path for markdown
+        # Get the PDF filename without extension
+        pdf_filename = os.path.basename(pdf_path)
+        document_id = os.path.splitext(pdf_filename)[0]
 
+        # Set up output directories with document_id
+        output_base_dir = os.path.join(os.getcwd(), "output", document_id)
+        local_image_dir = os.path.join(output_base_dir, "images")
+        local_md_dir = os.path.join(output_base_dir, "md")
+        image_dir = "images"  # Relative path for markdown
+
+        # Create directories
+        os.makedirs(output_base_dir, exist_ok=True)
         os.makedirs(local_image_dir, exist_ok=True)
+        os.makedirs(local_md_dir, exist_ok=True)
 
         # Create writers for saving output
         image_writer = FileBasedDataWriter(local_image_dir)
         md_writer = FileBasedDataWriter(local_md_dir)
-
-        # Get the PDF filename without extension
-        pdf_filename = os.path.basename(pdf_path)
-        name_without_suffix = os.path.splitext(pdf_filename)[0]
 
         # Read PDF content
         reader = FileBasedDataReader("")
@@ -56,11 +58,9 @@ def extract_text_from_pdf(pdf_path):
             pipe_result = infer_result.pipe_txt_mode(image_writer)
 
         # Generate and save output files
-        model_pdf_path = os.path.join(local_md_dir, f"{name_without_suffix}_model.pdf")
-        layout_pdf_path = os.path.join(
-            local_md_dir, f"{name_without_suffix}_layout.pdf"
-        )
-        spans_pdf_path = os.path.join(local_md_dir, f"{name_without_suffix}_spans.pdf")
+        model_pdf_path = os.path.join(local_md_dir, f"{document_id}_model.pdf")
+        layout_pdf_path = os.path.join(local_md_dir, f"{document_id}_layout.pdf")
+        spans_pdf_path = os.path.join(local_md_dir, f"{document_id}_spans.pdf")
 
         infer_result.draw_model(model_pdf_path)
         pipe_result.draw_layout(layout_pdf_path)
@@ -70,46 +70,35 @@ def extract_text_from_pdf(pdf_path):
         md_content = pipe_result.get_markdown(image_dir)
 
         # Dump markdown to file
-        md_file_path = f"{name_without_suffix}.md"
+        md_file_path = f"{document_id}.md"
         pipe_result.dump_md(md_writer, md_file_path, image_dir)
 
-        # Get content list and save as JSON
+        # Get content list and save only as raw JSON (no duplicates)
         content_list = pipe_result.get_content_list(image_dir)
-        content_list_path = f"{name_without_suffix}_content_list.json"
-        pipe_result.dump_content_list(md_writer, content_list_path, image_dir)
-        print(
-            f"Saved content list JSON to: {os.path.join(local_md_dir, content_list_path)}"
-        )
 
-        # Get middle json and save
+        # Get middle json
         middle_json = pipe_result.get_middle_json()
-        middle_json_path = f"{name_without_suffix}_middle.json"
-        pipe_result.dump_middle_json(md_writer, middle_json_path)
-        print(f"Saved middle JSON to: {os.path.join(local_md_dir, middle_json_path)}")
 
-        # Save raw JSON directly to current directory
-        # This is in addition to MinerU's built-in JSON export
+        # Save only raw JSON files directly to document_id directory
         try:
-            # Save content list JSON (as a separate copy)
-            with open(
-                f"{name_without_suffix}_content_raw.json", "w", encoding="utf-8"
-            ) as f:
+            # Save content list JSON
+            raw_json_path = os.path.join(output_base_dir, f"{document_id}_content.json")
+            with open(raw_json_path, "w", encoding="utf-8") as f:
                 json.dump(content_list, f, ensure_ascii=False, indent=2)
 
             # If middle_json is not a string, save it directly
+            middle_raw_path = os.path.join(
+                output_base_dir, f"{document_id}_middle.json"
+            )
             if not isinstance(middle_json, str):
-                with open(
-                    f"{name_without_suffix}_middle_raw.json", "w", encoding="utf-8"
-                ) as f:
+                with open(middle_raw_path, "w", encoding="utf-8") as f:
                     json.dump(middle_json, f, ensure_ascii=False, indent=2)
             # If it's a string, it might already be JSON formatted
             else:
-                with open(
-                    f"{name_without_suffix}_middle_raw.json", "w", encoding="utf-8"
-                ) as f:
+                with open(middle_raw_path, "w", encoding="utf-8") as f:
                     f.write(middle_json)
 
-            print(f"Saved raw JSON copies to current directory")
+            print(f"Saved JSON files to: {output_base_dir}")
         except Exception as json_err:
             print(f"Warning: Could not save raw JSON files: {json_err}")
 
@@ -142,6 +131,11 @@ def _fallback_text_extraction(pdf_path):
         print("Using fallback text extraction with PyMuPDF")
         extracted_text = ""
 
+        # Create fallback output directory
+        document_id = os.path.splitext(os.path.basename(pdf_path))[0]
+        fallback_dir = os.path.join(os.getcwd(), "output", document_id, "fallback")
+        os.makedirs(fallback_dir, exist_ok=True)
+
         # Open the PDF
         doc = fitz.open(pdf_path)
 
@@ -153,8 +147,20 @@ def _fallback_text_extraction(pdf_path):
             text = page.get_text()
             extracted_text += text + "\n\n"
 
+            # Save individual page text
+            page_file = os.path.join(fallback_dir, f"page_{page_num+1}.txt")
+            with open(page_file, "w", encoding="utf-8") as f:
+                f.write(text)
+
         # Close the document
         doc.close()
+
+        # Save full text to fallback directory
+        full_text_path = os.path.join(fallback_dir, f"{document_id}_full_text.txt")
+        with open(full_text_path, "w", encoding="utf-8") as f:
+            f.write(extracted_text)
+
+        print(f"Saved fallback extraction to: {fallback_dir}")
 
         return extracted_text.strip()
 

@@ -1,12 +1,9 @@
 import os
 import requests
-import json
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-# Grok X API configuration
 GROK_API_URL = os.environ.get("GROK_API_URL", "https://api.x.ai/v1/chat/completions")
 GROK_API_KEY = os.environ.get("GROK_API_KEY")
 
