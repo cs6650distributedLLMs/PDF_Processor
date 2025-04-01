@@ -95,6 +95,7 @@ web_modules/
 # Bundled lambdas
 lambda-functions-payload.zip
 *-layer.zip
+function.zip
 nodejs/
 
 # Lambda dist files
