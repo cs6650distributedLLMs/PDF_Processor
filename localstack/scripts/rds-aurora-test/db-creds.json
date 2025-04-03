@@ -1,0 +1,8 @@
+{
+  "engine": "aurora-postgresql",
+  "username": "admin",
+  "password": "admin",
+  "host": "localhost",
+  "dbname": "hummingbird",
+  "port": "4510"
+}
