@@ -42,3 +42,25 @@ pdf-processor/
     ├── text/
     └── summaries/
 ```
+
+## Installation
+
+1. Make sure you're using Python 3.7+.
+
+Using Conda is recommended:
+```
+conda create --name detectron2_env python=3.9
+conda activate detectron2_env
+```
+
+2. Use the requirements.txt to install all needed packages:
+```
+pip install -r requirements.txt
+```
+
+3. Run the application:
+```
+python app.py
+```
+
+4. Open your web browser and go to `http://localhost:000` to access the application.
