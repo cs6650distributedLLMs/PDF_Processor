@@ -1,0 +1,23 @@
+# AWS-specific dependencies
+boto3==1.26.0
+botocore==1.29.0
+
+# Web framework (for API Gateway compatibility)
+flask==2.2.3
+Werkzeug==2.2.3
+
+# File handling and utilities
+python-dotenv==1.0.0
+PyMuPDF==1.22.3
+requests==2.31.0
+
+# If using pymupdf[numpy], you might need:
+numpy==1.24.2
+
+# PDF Processing dependencies - include all required by your application
+# You might need to adjust these based on your specific requirements
+pyicu==2.11
+pyyaml==6.0
+pillow==9.4.0
+
+# Add other dependencies as needed
