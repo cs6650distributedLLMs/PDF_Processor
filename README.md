@@ -56,8 +56,8 @@ PDF-PROCESSOR
 
 Using Conda is recommended:
 ```
-conda create --name detectron2_env python=3.9
-conda activate detectron2_env
+conda create --name pdf_processor python=3.9
+conda activate pdf_processor
 ```
 
 2. Use the requirements.txt to install all needed packages:
