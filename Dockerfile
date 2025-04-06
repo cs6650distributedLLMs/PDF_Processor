@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=1 \
     LD_LIBRARY_PATH=/usr/local/lib:/var/lang/lib:/opt/lib \
     PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
-# Install basic dependencies
+# Install system dependencies (using yum since this is Amazon Linux)
 RUN yum update -y && \
     yum install -y gcc gcc-c++ make git \
     mesa-libGL glib2-devel libSM libXrender libXext \
@@ -28,7 +28,7 @@ RUN wget -O ffmpeg-4.2.2.tar.bz2 https://ffmpeg.org/releases/ffmpeg-4.2.2.tar.bz
 # Install pip and dependencies
 RUN pip install --upgrade pip
 
-# Install torchtext and other common dependencies
+# Install torchtext and other torch dependencies
 RUN pip install torch==1.10.0 torchtext==0.11.0 torchvision==0.11.0
 
 # Clone and build decord with the compatible FFmpeg
@@ -41,13 +41,15 @@ RUN git clone --recursive https://github.com/dmlc/decord && \
     cd ../python && \
     pip install -e .
 
-# Copy your application files
+# Copy function code
 WORKDIR ${LAMBDA_TASK_ROOT}
-COPY . .
+COPY . ${LAMBDA_TASK_ROOT}/
 
-# Install the rest of the requirements
+# Install requirements
 RUN pip install -r requirements.txt
+
+# Install detectron2
 RUN cd pdf_processor/detectron2 && pip install -e .
 
 # Set the Lambda handler
-CMD [ "pdf_processor/lambda_handler.lambda_handler" ]
+CMD [ "lambda_handler.lambda_handler" ]
