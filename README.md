@@ -64,3 +64,15 @@ python app.py
 ```
 
 4. Open your web browser and go to `http://localhost:000` to access the application.
+
+## Installation (using Docker)
+
+1. Build the Docker image:
+```
+docker build -t pdf-processor-lambda .
+```
+
+2. Run the Docker container:
+```
+docker run -p 8000:8000 pdf-processor-lambda
+```

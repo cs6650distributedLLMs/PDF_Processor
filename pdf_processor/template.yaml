@@ -1,0 +1,179 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: PDF Processor Application
+
+# Global parameters and settings
+Globals:
+  Function:
+    Timeout: 300  # 5 minutes
+    MemorySize: 1024
+    Environment:
+      Variables:
+        PDF_BUCKET: !Ref PDFBucket
+        TEXT_BUCKET: !Ref TextBucket
+        SUMMARY_BUCKET: !Ref SummaryBucket
+        JOBS_TABLE: !Ref JobsTable
+        GROK_API_URL: !Ref GrokApiUrl
+        GROK_API_KEY: !Ref GrokApiKey
+        SECRET_KEY: !Ref SecretKey
+
+Parameters:
+  GrokApiUrl:
+    Type: String
+    Default: https://api.x.ai/v1/chat/completions
+    Description: URL for the Grok API
+  
+  GrokApiKey:
+    Type: String
+    NoEcho: true
+    Description: API Key for Grok
+  
+  SecretKey:
+    Type: String
+    NoEcho: true
+    Default: !Sub '${AWS::StackName}-secret-key-${AWS::AccountId}'
+    Description: Secret key for the application
+
+Resources:
+  # Lambda Function
+  PDFProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: lambda_handler.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref PDFBucket
+        - S3WritePolicy:
+            BucketName: !Ref PDFBucket
+        - S3ReadPolicy:
+            BucketName: !Ref TextBucket
+        - S3WritePolicy:
+            BucketName: !Ref TextBucket
+        - S3ReadPolicy:
+            BucketName: !Ref SummaryBucket
+        - S3WritePolicy:
+            BucketName: !Ref SummaryBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref JobsTable
+      Events:
+        ApiUpload:
+          Type: HttpApi
+          Properties:
+            Path: /upload
+            Method: post
+        ApiGetStatus:
+          Type: HttpApi
+          Properties:
+            Path: /status/{id}
+            Method: get
+        ApiGetSummary:
+          Type: HttpApi
+          Properties:
+            Path: /summary/{id}
+            Method: get
+        S3Upload:
+          Type: S3
+          Properties:
+            Bucket: !Ref PDFBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: uploads/
+                  - Name: suffix
+                    Value: .pdf
+        ScheduledJobProcessor:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 minute)
+            Name: JobQueueProcessor
+            Description: Process PDF processing job queue
+            Enabled: true
+
+  # DynamoDB Table for tracking jobs
+  JobsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-jobs
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: job_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: job_id
+          KeyType: HASH
+
+  # S3 Buckets
+  PDFBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-pdfs-${AWS::AccountId}
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            AllowedOrigins:
+              - '*'
+            ExposedHeaders:
+              - ETag
+  
+  TextBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-texts-${AWS::AccountId}
+  
+  SummaryBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-summaries-${AWS::AccountId}
+
+  # API Gateway HTTP API
+  PDFProcessorApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowOrigins:
+          - '*'
+
+Outputs:
+  PDFProcessorFunction:
+    Description: "PDF Processor Lambda Function ARN"
+    Value: !GetAtt PDFProcessorFunction.Arn
+  
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${PDFProcessorApi}.execute-api.${AWS::Region}.amazonaws.com"
+  
+  PDFBucket:
+    Description: "S3 bucket for PDF uploads"
+    Value: !Ref PDFBucket
+  
+  TextBucket:
+    Description: "S3 bucket for extracted text"
+    Value: !Ref TextBucket
+  
+  SummaryBucket:
+    Description: "S3 bucket for summaries"
+    Value: !Ref SummaryBucket
+  
+  JobsTable:
+    Description: "DynamoDB table for tracking jobs"
+    Value: !Ref JobsTable
