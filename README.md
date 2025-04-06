@@ -9,38 +9,45 @@ This application allows users to upload PDF documents, extract text using OCR, a
 - Text summarization using Grok X AI API
 - Simple web interface for uploading and viewing results
 - Asynchronous processing with a message queue system
-- Local file storage for documents, extracted text, and summaries
+- Amazon S3 storage for documents, extracted text, and summaries
+- Docker support for easy deployment
+- DynamoDB for storing metadata and processing status
+- Amazon SQS for message queuing
+- AWS Lambda for serverless processing
 
 ## Project Structure
 
 ```plaintext
-pdf-processor/
-│
-├── app.py                    # Main Flask application
+PDF-PROCESSOR
+├── README.md                # Project documentation
+├── Dockerfile             # Dockerfile for containerization
 ├── requirements.txt          # Python dependencies
-├── config.py                 # Configuration settings
-│
-├── static/                   # Static files for web interface
-│   ├── css/
-│   │   └── style.css
-│   └── js/
-│       └── main.js
-│
-├── templates/                # HTML templates
-│   ├── index.html
-│   └── results.html
-│
-├── services/                 # Service modules
-│   ├── __init__.py
-│   ├── ocr_service.py        # OCR with MinerU integration
-│   ├── summary_service.py    # LLM summary with Grok X API
-│   ├── storage_service.py    # File storage handling
-│   └── message_service.py    # Simple message queue implementation
-│
-└── uploads/                  # Local storage for uploaded files
-    ├── pdfs/
-    ├── text/
-    └── summaries/
+├── deploy.sh                 # Deployment script
+├── lambda_handler.py          # AWS Lambda function handler
+├── template.yml             # AWS SAM template for Lambda deployment
+├── update_templates.py       # Script to update HTML templates
+├── update_static_to_s3.py    # Script to update static files to S3
+├── pdf-processor/
+   ├── __init__.py
+   ├── app.py                 # Main application file
+   ├── config.py              # Configuration settings
+   ├── download_models.hf.py # Script to download models from Hugging Face
+   ├── static/
+   │   ├── css/
+   │   │   └── style.css      # CSS styles for the web interface
+   │   └── js/
+   │       └── main.js        # JavaScript for the web interface
+   ├── templates/
+   │   ├── index.html         # HTML template for the upload page
+   │   └── results.html       # HTML template for displaying results
+   ├── services/
+   │   ├── __init__.py
+   │   ├── ocr_service.py     # OCR service for text extraction
+   │   ├── summary_service.py # Summary service for text summarization
+   │   ├── storage_service.py # Storage service for file handling
+   │   └── message_service.py # Message service for queue handling
+   ├── detectron2/           # Detectron2 models and configurations
+
 ```
 
 ## Installation
