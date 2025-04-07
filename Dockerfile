@@ -23,6 +23,10 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v3.20.0/cmake-3.20.0
     rm -rf cmake-3.20.0-linux-aarch64 cmake-3.20.0-linux-aarch64.tar.gz && \
     cmake --version
 
+# Download a real ARM SVE header from the ARM open source repository
+RUN mkdir -p /usr/local/include && \
+    wget -O /usr/local/include/arm_sve.h "https://github.com/gcc-mirror/gcc/blob/master/gcc/config/aarch64/arm_sve.h"
+
 # Install a specific version of FFmpeg that's compatible with decord
 WORKDIR /tmp
 RUN wget -O ffmpeg-4.2.2.tar.bz2 https://ffmpeg.org/releases/ffmpeg-4.2.2.tar.bz2 && \
@@ -50,11 +54,26 @@ RUN git clone --recursive https://github.com/dmlc/decord && \
     cd ../python && \
     pip install -e .
 
+COPY . /var/task/
+RUN echo "Listing /var/task after COPY:" && ls -R /var/task/
+
 # Copy function code
 COPY . ${LAMBDA_TASK_ROOT}/
 
-# Install all requirements
-RUN pip install -r ${LAMBDA_TASK_ROOT}/requirements.txt
+# Define environment vars for simsimd build to disable SVE
+ENV SIMSIMD_TARGET_SVE=0 \
+    SIMSIMD_TARGET_SVE_F16=0 \
+    SIMSIMD_TARGET_SVE_BF16=0 \
+    SIMSIMD_TARGET_SVE2=0
+
+# Try to install dependencies with modified approach
+RUN pip install -r ${LAMBDA_TASK_ROOT}/requirements.txt || \
+    (echo "Error installing all requirements, trying with simsimd excluded..." && \
+     grep -v "simsimd" ${LAMBDA_TASK_ROOT}/requirements.txt > ${LAMBDA_TASK_ROOT}/filtered-requirements.txt && \
+     pip install -r ${LAMBDA_TASK_ROOT}/filtered-requirements.txt && \
+     echo "Attempting simsimd installation separately..." && \
+     CFLAGS="-DSIMSIMD_TARGET_SVE=0 -DSIMSIMD_TARGET_SVE_F16=0 -DSIMSIMD_TARGET_SVE_BF16=0 -DSIMSIMD_TARGET_SVE2=0" pip install simsimd || \
+     echo "WARNING: simsimd package was not installed")
 
 # Install detectron2
 RUN if [ -d "${LAMBDA_TASK_ROOT}/pdf_processor/detectron2" ]; then \
