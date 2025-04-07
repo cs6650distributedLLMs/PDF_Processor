@@ -6,10 +6,10 @@ set -e  # Exit on error
 # Configuration
 STACK_NAME=${STACK_NAME:-pdf-processor}
 REGION=${AWS_REGION:-us-west-2}
-DEPLOY_BUCKET=${DEPLOY_BUCKET:-cs6650bucket-pdf-processor-chenyujiang}  # Bucket for SAM deployment artifacts
-STATIC_BUCKET=${STATIC_BUCKET:-cs6650bucket-pdf-processor-chenyujiang}  # Bucket for static assets
+DEPLOY_BUCKET=${DEPLOY_BUCKET:-}  # Bucket for SAM deployment artifacts
+STATIC_BUCKET=${STATIC_BUCKET:-}  # Bucket for static assets
 CLOUDFRONT_DOMAIN=${CLOUDFRONT_DOMAIN:-}  # CloudFront domain (if any)
-GROK_API_KEY=${GROK_API_KEY:-xai-MbZpHYskACw1iwEes9876ntcuuEIOad6xrY2VvNoAdyAt9iQAEcnyI1jA201ApUcpmfFJtjhn7DtN97s}  # Grok API Key
+GROK_API_KEY=${GROK_API_KEY:-}  # Grok API Key
 GROK_API_URL=${GROK_API_URL:-https://api.x.ai/v1/chat/completions}  # Grok API URL
 
 # Validate requirements
