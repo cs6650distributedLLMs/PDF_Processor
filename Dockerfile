@@ -4,15 +4,24 @@ FROM public.ecr.aws/lambda/python:3.9
 ENV PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     LD_LIBRARY_PATH=/usr/local/lib:/var/lang/lib:/opt/lib \
-    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig \
+    PATH=/usr/local/bin:$PATH
 
 # Install system dependencies (using yum since this is Amazon Linux)
 RUN yum update -y && \
     yum install -y gcc gcc-c++ make git \
     mesa-libGL glib2-devel libSM libXrender libXext \
-    pkgconfig cmake ninja-build wget \
-    nasm yasm \
+    pkgconfig wget \
+    nasm tar gzip bzip2 \
     && yum clean all
+
+# Install newer CMake version
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.20.0/cmake-3.20.0-linux-aarch64.tar.gz && \
+    tar -xzf cmake-3.20.0-linux-aarch64.tar.gz && \
+    cp -r cmake-3.20.0-linux-aarch64/bin/* /usr/local/bin/ && \
+    cp -r cmake-3.20.0-linux-aarch64/share/* /usr/local/share/ && \
+    rm -rf cmake-3.20.0-linux-aarch64 cmake-3.20.0-linux-aarch64.tar.gz && \
+    cmake --version
 
 # Install a specific version of FFmpeg that's compatible with decord
 WORKDIR /tmp
@@ -28,28 +37,29 @@ RUN wget -O ffmpeg-4.2.2.tar.bz2 https://ffmpeg.org/releases/ffmpeg-4.2.2.tar.bz
 # Install pip and dependencies
 RUN pip install --upgrade pip
 
-# Install torchtext and other torch dependencies
-RUN pip install torch==1.10.0 torchtext==0.11.0 torchvision==0.11.0
+# Install torch and other dependencies
+RUN pip install torch==1.10.0 torchtext==0.11.0 torchvision==0.11.1
 
 # Clone and build decord with the compatible FFmpeg
 RUN git clone --recursive https://github.com/dmlc/decord && \
     cd decord && \
     git checkout v0.6.0 && \
     mkdir -p build && cd build && \
-    cmake .. -DUSE_CUDA=OFF -DCMAKE_BUILD_TYPE=Release && \
+    /usr/local/bin/cmake .. -DUSE_CUDA=OFF -DCMAKE_BUILD_TYPE=Release && \
     make -j$(nproc) && \
     cd ../python && \
     pip install -e .
 
 # Copy function code
-WORKDIR ${LAMBDA_TASK_ROOT}
 COPY . ${LAMBDA_TASK_ROOT}/
 
-# Install requirements
-RUN pip install -r requirements.txt
+# Install all requirements
+RUN pip install -r ${LAMBDA_TASK_ROOT}/requirements.txt
 
 # Install detectron2
-RUN cd pdf_processor/detectron2 && pip install -e .
+RUN if [ -d "${LAMBDA_TASK_ROOT}/pdf_processor/detectron2" ]; then \
+    cd ${LAMBDA_TASK_ROOT}/pdf_processor/detectron2 && pip install -e .; \
+    fi
 
 # Set the Lambda handler
 CMD [ "lambda_handler.lambda_handler" ]

@@ -52,34 +52,14 @@ PDF-PROCESSOR
 
 ## Installation
 
-1. Make sure you're using Python 3.7+.
-
-Using Conda is recommended:
+1. Install AWS SAM CLI and configure your AWS credentials:
 ```
-conda create --name pdf_processor python=3.9
-conda activate pdf_processor
+pip install aws-sam-cli
+aws configure
 ```
 
-2. Use the requirements.txt to install all needed packages:
+2. Execute the deployment script to set up the AWS resources:
 ```
-pip install -r requirements.txt
-```
-
-3. Run the application:
-```
-python app.py
-```
-
-4. Open your web browser and go to `http://localhost:000` to access the application.
-
-## Installation (using Docker)
-
-1. Build the Docker image:
-```
-docker build -t pdf-processor-lambda .
-```
-
-2. Run the Docker container:
-```
-docker run -p 8000:8000 pdf-processor-lambda
+chmod +x deploy.sh
+./deploy.sh
 ```
