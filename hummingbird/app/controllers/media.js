@@ -1,4 +1,4 @@
-const { errors: formidableErrors } = require('formidable');
+const { errors: formidableErrors } = require("formidable");
 const {
   sendAcceptedResponse,
   sendOkResponse,
@@ -6,21 +6,14 @@ const {
   sendResponse,
   sendBadRequestResponse,
   sendNotFoundResponse,
-} = require('../core/responses.js');
-const { uploadMedia } = require('../actions/uploadMedia.js');
-const { convertBytesToMb } = require('../core/utils.js');
-const {
-  MAX_FILE_SIZE,
-  CUSTOM_FORMIDABLE_ERRORS,
-  MEDIA_STATUS,
-} = require('../core/constants.js');
-const { getProcessedMediaUrl } = require('../clients/s3.js');
-const { createMedia, getMedia } = require('../clients/dynamodb.js');
-const { getLogger } = require('../logger.js');
-const {
-  publishDeleteMediaEvent,
-  publishResizeMediaEvent,
-} = require('../clients/sns.js');
+} = require("../core/responses.js");
+const { uploadMedia } = require("../actions/uploadMedia.js");
+const { convertBytesToMb } = require("../core/utils.js");
+const { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS, MEDIA_STATUS } = require("../core/constants.js");
+const { getProcessedMediaUrl } = require("../clients/s3.js");
+const { createMedia, getMedia } = require("../clients/dynamodb.js");
+const { getLogger } = require("../logger.js");
+const { publishDeleteMediaEvent, publishSummarizeMediaEvent } = require("../clients/sns.js");
 
 const logger = getLogger();
 
@@ -28,9 +21,9 @@ const uploadController = async (req, res) => {
   try {
     const { mediaId, file } = await uploadMedia(req);
     const { size, originalFilename: name, mimetype } = file;
-    const { width } = req.hummingbirdOptions;
+    const { style } = req.hummingbirdOptions;
 
-    await createMedia({ mediaId, size, name, mimetype, width });
+    await createMedia({ mediaId, size, name, mimetype, style });
 
     sendAcceptedResponse(res, { mediaId });
   } catch (error) {
@@ -44,15 +37,14 @@ const uploadController = async (req, res) => {
 
       if (error.code === formidableErrors.maxFilesExceeded) {
         sendBadRequestResponse(res, {
-          message:
-            'Too many fields in the form. Only single file uploads are supported.',
+          message: "Too many fields in the form. Only single file uploads are supported.",
         });
         return;
       }
 
       if (error.code === formidableErrors.malformedMultipart) {
         sendBadRequestResponse(res, {
-          message: 'Malformed multipart form data.',
+          message: "Malformed multipart form data.",
         });
         return;
       }
@@ -61,7 +53,7 @@ const uploadController = async (req, res) => {
         sendResponse(
           res,
           CUSTOM_FORMIDABLE_ERRORS.INVALID_FILE_TYPE.httpCode,
-          'Invalid file type. Only images are supported.'
+          "Invalid file type. Only PDF documents are supported.",
         );
         return;
       }
@@ -104,10 +96,10 @@ const downloadController = async (req, res) => {
 
     if (media.status !== MEDIA_STATUS.COMPLETE) {
       const SIXTY_SECONDS = 60;
-      res.set('Retry-After', SIXTY_SECONDS);
-      res.set('Location', `${req.hostname}/v1/media/${mediaId}/status`);
+      res.set("Retry-After", SIXTY_SECONDS);
+      res.set("Location", `${req.hostname}/v1/media/${mediaId}/status`);
       sendAcceptedResponse(res, {
-        message: 'Media processing in progress.',
+        message: "PDF summarization in progress.",
       });
       return;
     }
@@ -138,7 +130,7 @@ const getController = async (req, res) => {
   }
 };
 
-const resizeController = async (req, res) => {
+const summarizeController = async (req, res) => {
   try {
     const mediaId = req.params.id;
 
@@ -148,9 +140,9 @@ const resizeController = async (req, res) => {
       return;
     }
 
-    const { width } = req.hummingbirdOptions;
+    const { style } = req.hummingbirdOptions;
 
-    await publishResizeMediaEvent({ mediaId, width });
+    await publishSummarizeMediaEvent({ mediaId, style });
 
     sendAcceptedResponse(res, { mediaId });
   } catch (error) {
@@ -183,6 +175,6 @@ module.exports = {
   statusController,
   downloadController,
   getController,
-  resizeController,
+  summarizeController,
   deleteController,
 };

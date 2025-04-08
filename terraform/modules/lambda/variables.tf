@@ -84,3 +84,13 @@ variable "private_subnet_ids" {
   description = "IDs of the private subnets"
   type        = list(string)
 }
+
+variable "xai_api_key" {
+  description = "API key for the XAI service"
+  type        = string
+}
+
+variable "media_management_topic_arn" {
+  description = "ARN of the SNS topic for media management"
+  type        = string
+}

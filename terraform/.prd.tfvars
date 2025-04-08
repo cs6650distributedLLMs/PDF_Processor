@@ -16,3 +16,4 @@ otel_lambda_http_port                      = 4322
 media_dynamo_table_name                    = "hummingbird-app-table"
 media_s3_bucket_name                       = "hummingbird-app-media-bucket"
 node_env                                   = "production"
+xai_api_key                                = ""

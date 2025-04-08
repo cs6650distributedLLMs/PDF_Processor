@@ -266,9 +266,12 @@ module "lambdas" {
   otel_grpc_gateway_endpoint          = var.application_environment == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_grpc_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_grpc_port}"
   otel_http_gateway_endpoint          = var.application_environment == "localstack" ? "http://${var.otel_exporter_hostame}:${var.otel_gateway_http_port}" : "http://${module.collector.alb_dns_name}:${var.otel_gateway_http_port}"
   opentelemetry_collector_config_file = var.lambda_opentelemetry_collector_config_file
+  xai_api_key                         = var.xai_api_key
 
   process_media_lambda_sg = module.process_media_lambda_sg.id
   manage_media_lambda_sg  = module.manage_media_lambda_sg.id
 
   private_subnet_ids = module.networking.private_subnet_ids
+
+  media_management_topic_arn = module.eventing.media_management_topic_arn
 }

@@ -248,6 +248,8 @@ resource "aws_lambda_function" "manage_media" {
       OTEL_EXPORTER_OTLP_ENDPOINT         = var.otel_http_gateway_endpoint
       OTEL_NODE_DISABLED_INSTRUMENTATIONS = "fs,net,dns"
       OTEL_SEMCONV_STABILITY_OPT_IN       = "http"
+      MEDIA_MANAGEMENT_TOPIC_ARN          = var.media_management_topic_arn
+      XAI_API_KEY                         = var.xai_api_key
     }
   }
 
@@ -351,6 +353,8 @@ resource "aws_lambda_function" "process_media" {
       OTEL_EXPORTER_OTLP_ENDPOINT         = var.otel_http_gateway_endpoint
       OTEL_NODE_DISABLED_INSTRUMENTATIONS = "fs,net,dns"
       OTEL_SEMCONV_STABILITY_OPT_IN       = "http"
+      MEDIA_MANAGEMENT_TOPIC_ARN          = var.media_management_topic_arn
+      XAI_API_KEY                         = var.xai_api_key
     }
   }
 

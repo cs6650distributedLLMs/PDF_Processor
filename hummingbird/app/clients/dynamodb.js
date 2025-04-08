@@ -22,10 +22,10 @@ const endpoint = isLocalEnv()
  * @param {number} param0.size The size of the media object in bytes
  * @param {string} param0.name The original filename of the media object
  * @param {string} param0.mimetype The MIME type of the media object
- * @param {number} param0.width The size to resize the uploaded image to
+ * @param {string} param0.style The style to use for the PDF summary
  * @returns {Promise<void>}
  */
-const createMedia = async ({ mediaId, size, name, mimetype, width }) => {
+const createMedia = async ({ mediaId, size, name, mimetype, style }) => {
   const TableName = process.env.MEDIA_DYNAMODB_TABLE_NAME;
   const command = new PutItemCommand({
     TableName,
@@ -36,7 +36,7 @@ const createMedia = async ({ mediaId, size, name, mimetype, width }) => {
       name: { S: name },
       mimetype: { S: mimetype },
       status: { S: MEDIA_STATUS.PENDING },
-      width: { N: String(width) },
+      style: { S: String(style) },
     },
   });
 
@@ -86,6 +86,7 @@ const getMedia = async (mediaId) => {
       name: Item.name.S,
       mimetype: Item.mimetype.S,
       status: Item.status.S,
+      style: Item.style?.S || 'concise',
     };
   } catch (error) {
     logger.error(error);

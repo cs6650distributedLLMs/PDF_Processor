@@ -99,3 +99,8 @@ variable "lambda_opentelemetry_collector_config_file" {
   description = "Path to the OpenTelemetry collector configuration file"
   type        = string
 }
+
+variable "xai_api_key" {
+  description = "API key for XAI"
+  type        = string
+}

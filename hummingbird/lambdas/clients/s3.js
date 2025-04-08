@@ -49,13 +49,13 @@ const uploadMediaToStorage = ({
  * @param {string} param0.mediaName The name of the media file
  * @returns {Promise<Uint8Array>} The media file stream
  */
-const getMediaFile = async ({ mediaId, mediaName }) => {
+const getMediaFile = async ({ mediaId, mediaName, keyPrefix = 'uploads' }) => {
   try {
     const client = new S3Client({ region: process.env.AWS_REGION });
 
     const command = new GetObjectCommand({
       Bucket: process.env.MEDIA_BUCKET_NAME,
-      Key: `uploads/${mediaId}/${mediaName}`,
+      Key: `${keyPrefix}/${mediaId}/${mediaName}`,
     });
 
     const response = await client.send(command);

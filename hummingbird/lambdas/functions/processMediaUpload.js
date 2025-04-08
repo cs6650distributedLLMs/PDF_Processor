@@ -41,49 +41,11 @@ const getHandler = () => {
 
         span.setAttribute('media.id', mediaId);
 
-        const { name: mediaName, width } = await setMediaStatusConditionally({
-          mediaId,
-          newStatus: MEDIA_STATUS.PROCESSING,
-          expectedCurrentStatus: MEDIA_STATUS.PENDING,
-        });
-
-        logger.info('Media status set to PROCESSING');
-
-        const image = await getMediaFile({ mediaId, mediaName });
-
-        logger.info('Got media file');
-
-        const mediaProcessingStart = performance.now();
-        const resizeMedia = await processMediaWithSharp({
-          imageBuffer: image,
-          width,
-        });
-        const mediaProcessingEnd = performance.now();
-
-        span.addEvent('sharp.resizing.done', {
-          'media.processing.duration': Math.round(
-            mediaProcessingEnd - mediaProcessingStart
-          ),
-        });
-
-        logger.info('Processed media');
-
-        await uploadMediaToStorage({
-          mediaId,
-          mediaName,
-          body: resizeMedia,
-          keyPrefix: 'resized',
-        });
-
-        logger.info('Uploaded processed media');
-
-        await setMediaStatusConditionally({
-          mediaId,
-          newStatus: MEDIA_STATUS.COMPLETE,
-          expectedCurrentStatus: MEDIA_STATUS.PROCESSING,
-        });
-
-        logger.info(`Done processing media ${mediaId}.`);
+        // await setMediaStatusConditionally({
+        //   mediaId,
+        //   newStatus: MEDIA_STATUS.PROCESSING,
+        //   expectedCurrentStatus: MEDIA_STATUS.PENDING,
+        // });
 
         successesCounter.add(1, {
           scope: metricScope,
@@ -127,28 +89,6 @@ const getHandler = () => {
       }
     });
   };
-};
-
-/**
- * Resizes a media file to a specific width and converts it to JPEG format.
- * @param {object} param0 The function parameters
- * @param {Uint8Array} param0.imageBuffer The image buffer to resize
- * @param {string} width The size to resize the uploaded image to
- * @returns {Promise<Buffer>} The resized image buffer
- */
-const processMediaWithSharp = async ({ imageBuffer, width }) => {
-  const DEFAULT_IMAGE_WIDTH_PX = 500;
-  const imageSizePx = parseInt(width) || DEFAULT_IMAGE_WIDTH_PX;
-  return await sharp(imageBuffer)
-    .resize(imageSizePx)
-    .composite([
-      {
-        input: './hummingbird-watermark.png',
-        gravity: 'southeast',
-      },
-    ])
-    .toFormat('jpeg')
-    .toBuffer();
 };
 
 const handler = withLogging(getHandler());

@@ -18,14 +18,14 @@ const failuresCounter = meter.createCounter('media.upload.failure', {
 });
 
 /**
- * Uploads a media file to AWS S3 in a streaming fashion.
+ * Uploads a PDF document to AWS S3 in a streaming fashion.
  * @param {Request} req Express.js (Node) HTTP request object.
  * @returns {Promise<string>} The file ID.
  */
 const uploadMedia = async (req) => {
   return new Promise((resolve, reject) => {
     try {
-      tracer.startActiveSpan('upload-media-file', (span) => {
+      tracer.startActiveSpan('upload-pdf-file', (span) => {
         const mediaId = randomUUID();
         span.setAttribute('media.id', mediaId);
 
@@ -35,8 +35,8 @@ const uploadMedia = async (req) => {
           maxFileSize: MAX_FILE_SIZE,
           keepExtensions: true,
           filter: ({ mimetype }) => {
-            const isImage = mimetype && mimetype.startsWith('image');
-            if (!isImage) {
+            const isPdf = mimetype && mimetype === 'application/pdf';
+            if (!isPdf) {
               const { code, httpCode } =
                 CUSTOM_FORMIDABLE_ERRORS.INVALID_FILE_TYPE;
               const error = new formidableErrors.default(
