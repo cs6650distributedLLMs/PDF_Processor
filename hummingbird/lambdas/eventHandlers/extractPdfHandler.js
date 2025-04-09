@@ -58,7 +58,7 @@ const extractPdfHandler = async ({ mediaId, style, span }) => {
       'media.processing.duration': Math.round(processingEnd - processingStart),
     });
 
-    logger.info(`Extracted ${extractedText} from PDF`)
+    // logger.info(`Extracted ${extractedText} from PDF`)
 
     logger.info(`Extracted ${extractedText.length} characters from PDF`);
 
@@ -125,7 +125,7 @@ const extractTextFromPdf = async (pdfData) => {
     // Parse the PDF data using pdf-parse
     const data = await pdfParse(pdfData);
 
-    logger.info(`Extracted Text from pdf ${data}`);
+    // logger.info(`Extracted Text from pdf ${data}`);
 
     // Return the extracted text
     return data;
