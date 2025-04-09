@@ -1,7 +1,7 @@
 const { Span } = require('@opentelemetry/api');
 const opentelemetry = require('@opentelemetry/api');
 const { ConditionalCheckFailedException } = require('@aws-sdk/client-dynamodb');
-const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+const pdfParse = require('pdf-parse');
 const { getLogger } = require('../logger');
 const { setMediaStatusConditionally } = require('../clients/dynamodb.js');
 const { getMediaFile, uploadMediaToStorage } = require('../clients/s3.js');
@@ -57,6 +57,8 @@ const extractPdfHandler = async ({ mediaId, style, span }) => {
     span.addEvent('pdf.extraction.done', {
       'media.processing.duration': Math.round(processingEnd - processingStart),
     });
+
+    logger.info(`Extracted ${extractedText} from PDF`)
 
     logger.info(`Extracted ${extractedText.length} characters from PDF`);
 
@@ -122,8 +124,11 @@ const extractTextFromPdf = async (pdfData) => {
   try {
     // Parse the PDF data using pdf-parse
     const data = await pdfParse(pdfData);
+
+    logger.info(`Extracted Text from pdf ${data}`);
+
     // Return the extracted text
-    return data.text;
+    return data;
   } catch (error) {
     logger.error('Error extracting text from PDF', error);
 

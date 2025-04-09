@@ -44,7 +44,7 @@
   "dependencies": {
     "axios": "^1.8.4",
     "lodash": "^4.17.21",
-    "pdf-parse": "^1.1.1",
+    "pdf-parse": "https://github.com/steniowagner/pdf-parse-fork/tarball/main",
     "winston": "^3.17.0"
   }
 }
