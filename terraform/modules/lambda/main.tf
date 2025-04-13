@@ -136,33 +136,6 @@ data "archive_file" "lambda" {
 }
 
 #######################################
-# Build lambda layer for sharp module #
-#######################################
-locals {
-  sharp_layer_dir_path = "${var.lambdas_src_path}/sharp-layer"
-  sharp_layer_zip_file = "${local.sharp_layer_dir_path}/lambda-sharp-layer.zip"
-}
-
-resource "null_resource" "build_sharp_lambda_layer" {
-  provisioner "local-exec" {
-    command     = "sh build-lambda-layer.sh"
-    working_dir = local.sharp_layer_dir_path
-  }
-
-  triggers = {
-    should_trigger_resource = local.source_directory_hash
-  }
-}
-
-resource "aws_lambda_layer_version" "sharp_lambda_layer" {
-  depends_on          = [null_resource.build_sharp_lambda_layer]
-  filename            = local.sharp_layer_zip_file
-  layer_name          = "hummingbird-sharp-lambda-layer"
-  compatible_runtimes = ["nodejs22.x"]
-  source_code_hash    = local.source_directory_hash
-}
-
-#######################################
 # Build lambda layer for otel module #
 #######################################
 locals {
@@ -217,11 +190,9 @@ resource "aws_iam_role" "manage_media_iam_role" {
 
 resource "aws_lambda_function" "manage_media" {
   depends_on = [
-    aws_lambda_layer_version.sharp_lambda_layer,
     aws_lambda_layer_version.otel_lambda_layer,
   ]
   layers = [
-    aws_lambda_layer_version.sharp_lambda_layer.arn,
     aws_lambda_layer_version.otel_lambda_layer.arn
   ]
 
@@ -319,11 +290,9 @@ resource "aws_iam_role" "process_media_iam_role" {
 
 resource "aws_lambda_function" "process_media" {
   depends_on = [
-    aws_lambda_layer_version.sharp_lambda_layer,
     aws_lambda_layer_version.otel_lambda_layer,
   ]
   layers = [
-    aws_lambda_layer_version.sharp_lambda_layer.arn,
     aws_lambda_layer_version.otel_lambda_layer.arn
   ]
 

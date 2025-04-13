@@ -6,6 +6,7 @@ const { uploadMediaToStorage } = require('../clients/s3.js');
 const {
   MAX_FILE_SIZE,
   CUSTOM_FORMIDABLE_ERRORS,
+  BUCKETS,
 } = require('../core/constants.js');
 
 const tracer = opentelemetry.trace.getTracer('hummingbird-media-upload');
@@ -89,6 +90,7 @@ const uploadMedia = async (req) => {
               mediaId,
               mediaName: file.originalFilename,
               body: this._writeStream,
+              keyPrefix: BUCKETS.UPLOADS,
             })
               .then(() => {
                 span.setAttribute('file.name', file.originalFilename);

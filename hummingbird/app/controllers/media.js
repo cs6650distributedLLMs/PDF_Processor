@@ -13,7 +13,7 @@ const { MAX_FILE_SIZE, CUSTOM_FORMIDABLE_ERRORS, MEDIA_STATUS } = require("../co
 const { getProcessedMediaUrl } = require("../clients/s3.js");
 const { createMedia, getMedia } = require("../clients/dynamodb.js");
 const { getLogger } = require("../logger.js");
-const { publishDeleteMediaEvent, publishSummarizeMediaEvent } = require("../clients/sns.js");
+const { publishDeleteMediaEvent, publishSummarizeTextEvent } = require("../clients/sns.js");
 
 const logger = getLogger();
 
@@ -21,9 +21,11 @@ const uploadController = async (req, res) => {
   try {
     const { mediaId, file } = await uploadMedia(req);
     const { size, originalFilename: name, mimetype } = file;
-    const { style } = req.hummingbirdOptions;
 
-    await createMedia({ mediaId, size, name, mimetype, style });
+    await createMedia({ mediaId, size, name, mimetype });
+
+    // The process_media Lambda function will be triggered automatically
+    // to handle the text extraction process whenever a new media file is uploaded to S3.
 
     sendAcceptedResponse(res, { mediaId });
   } catch (error) {
@@ -94,7 +96,7 @@ const downloadController = async (req, res) => {
       return;
     }
 
-    if (media.status !== MEDIA_STATUS.COMPLETE) {
+    if (media.status !== MEDIA_STATUS.SUMMARIZED) {
       const SIXTY_SECONDS = 60;
       res.set("Retry-After", SIXTY_SECONDS);
       res.set("Location", `${req.hostname}/v1/media/${mediaId}/status`);
@@ -142,7 +144,7 @@ const summarizeController = async (req, res) => {
 
     const { style } = req.hummingbirdOptions;
 
-    await publishSummarizeMediaEvent({ mediaId, style });
+    await publishSummarizeTextEvent({ mediaId, style });
 
     sendAcceptedResponse(res, { mediaId });
   } catch (error) {

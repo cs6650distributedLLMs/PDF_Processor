@@ -3,11 +3,14 @@ const opentelemetry = require('@opentelemetry/api');
 const { ConditionalCheckFailedException } = require('@aws-sdk/client-dynamodb');
 const axios = require('axios');
 const { getLogger } = require('../logger');
-const { setMediaStatusConditionally } = require('../clients/dynamodb.js');
+const {
+  setMediaStatus,
+  setMediaStatusConditionally,
+} = require('../clients/dynamodb.js');
 const { getMediaFile, uploadMediaToStorage } = require('../clients/s3.js');
-const { MEDIA_STATUS, SUMMARY_STYLE } = require('../constants.js');
-const { setMediaStatus } = require('../clients/dynamodb');
+const { MEDIA_STATUS, BUCKETS } = require('../core/constants.js');
 const { successesCounter, failuresCounter } = require('../observability.js');
+const { getBaseName } = require('../core/utils.js');
 
 const logger = getLogger();
 
@@ -26,27 +29,37 @@ const metricScope = 'summarizeTextHandler';
  * @param {Span} param0.span OpenTelemetry trace Span object
  * @returns {Promise<void>}
  */
-const summarizeTextHandler = async ({ mediaId, mediaName, style, span }) => {
+const summarizeTextHandler = async ({ mediaId, style, span }) => {
   if (!mediaId) {
     logger.info('Skipping summarize text message with missing mediaId.');
     return;
   }
 
-  logger.info(
-    `Summarizing text for PDF with id ${mediaId} using style: ${style}.`
-  );
-
   try {
+    // Summarization is only allowed if the status is EXTRACTED.
+    // This ensures that extraction was successful and completed.
+    // If the status is anything else, extraction may have failed or is still in progress.
+    const { name: mediaName } = await setMediaStatusConditionally({
+      mediaId,
+      newStatus: MEDIA_STATUS.PROCESSING,
+      expectedCurrentStatus: MEDIA_STATUS.EXTRACTED,
+    });
+
+    logger.info(
+      `Summarizing text for PDF with id ${mediaId} using style: ${style}.`
+    );
+
+    const basename = getBaseName(mediaName);
     // Get the extracted text from S3
     const textData = await getMediaFile({
       mediaId,
-      mediaName: `${mediaName}.txt`,
-      keyPrefix: 'extracted',
+      mediaName: `${basename}.extracted.txt`,
+      keyPrefix: BUCKETS.EXTRACTS,
     });
 
     const extractedText = new TextDecoder().decode(textData);
     logger.info(
-      `Retrieved ${extractedText.length} characters of extracted text`
+      `Retrieved ${extractedText.length} characters of extracted text for media ${mediaId}`
     );
 
     // Generate the summary using LLM
@@ -58,30 +71,26 @@ const summarizeTextHandler = async ({ mediaId, mediaName, style, span }) => {
       'media.processing.duration': Math.round(processingEnd - processingStart),
     });
 
-    logger.info(`Generated summary with ${summary.length} characters`);
+    logger.info(
+      `Generated summary with ${summary.length} characters for media ${mediaId}`
+    );
 
     // Save the summary to S3
     await uploadMediaToStorage({
       mediaId,
-      mediaName: `${mediaName}.summary.txt`,
+      mediaName: `${basename}.summary.txt`,
       body: Buffer.from(summary),
-      keyPrefix: 'resized',
+      keyPrefix: BUCKETS.SUMMARIES,
     });
 
-    logger.info('Uploaded summary');
+    logger.info(`Uploaded summary for media ${mediaId} to S3`);
 
     // Update media status to COMPLETE
-    await setMediaStatusConditionally({
-      mediaId,
-      newStatus: MEDIA_STATUS.COMPLETE,
-      expectedCurrentStatus: MEDIA_STATUS.PROCESSING,
-    });
+    await setMediaStatus({ mediaId, newStatus: MEDIA_STATUS.SUMMARIZED });
 
     logger.info(`Summarization complete for media ${mediaId}`);
     span.setStatus({ code: opentelemetry.SpanStatusCode.OK });
-    successesCounter.add(1, {
-      scope: metricScope,
-    });
+    successesCounter.add(1, { scope: metricScope });
   } catch (error) {
     span.setStatus({ code: opentelemetry.SpanStatusCode.ERROR });
 
@@ -95,16 +104,11 @@ const summarizeTextHandler = async ({ mediaId, mediaName, style, span }) => {
       throw error;
     }
 
-    await setMediaStatus({
-      mediaId,
-      newStatus: MEDIA_STATUS.ERROR,
-    });
+    await setMediaStatus({ mediaId, newStatus: MEDIA_STATUS.ERROR });
 
     logger.error(`Failed to summarize text for ${mediaId}`, error);
     span.end();
-    failuresCounter.add(1, {
-      scope: metricScope,
-    });
+    failuresCounter.add(1, { scope: metricScope });
     throw error;
   } finally {
     logger.info('Flushing OpenTelemetry signals');
@@ -120,6 +124,11 @@ const summarizeTextHandler = async ({ mediaId, mediaName, style, span }) => {
  * @returns {Promise<string>} The summary text
  */
 const generateSummaryWithLLM = async (text, style) => {
+  if (!process.env.XAI_API_KEY) {
+    logger.error('XAI_API_KEY is not set. Cannot generate summary.');
+    throw new Error('XAI_API_KEY is not set');
+  }
+
   try {
     // Prepare the prompt based on the style
     let prompt;
@@ -158,7 +167,7 @@ const generateSummaryWithLLM = async (text, style) => {
             content: truncatedPrompt,
           },
         ],
-        model: 'grok-beta',
+        model: 'grok-3-mini-beta',
         stream: false,
         temperature: 0.3,
       },
@@ -172,7 +181,10 @@ const generateSummaryWithLLM = async (text, style) => {
 
     return response.data.choices[0].message.content;
   } catch (error) {
-    logger.error('Error generating summary with LLM', error);
+    logger.error(
+      `Error generating summary with LLM for media ${mediaId}`,
+      error
+    );
     throw error;
   }
 };

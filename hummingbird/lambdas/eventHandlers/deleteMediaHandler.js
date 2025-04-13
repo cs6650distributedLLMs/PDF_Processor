@@ -1,8 +1,7 @@
 const { Span } = require('@opentelemetry/api');
 const opentelemetry = require('@opentelemetry/api');
 const { deleteMedia } = require('../clients/dynamodb.js');
-const { deleteMediaFile } = require('../clients/s3.js');
-const { MEDIA_STATUS } = require('../constants.js');
+const { deleteMediaFolder } = require('../clients/s3.js');
 const { getLogger } = require('../logger.js');
 const { successesCounter, failuresCounter } = require('../observability.js');
 
@@ -30,38 +29,24 @@ const deleteMediaHandler = async ({ mediaId, span }) => {
   logger.info(`Deleting media with id ${mediaId}.`);
 
   try {
-    const { name: mediaName, status } = await deleteMedia(mediaId);
+    const { name: mediaName } = await deleteMedia(mediaId);
 
     if (!mediaName) {
       logger.info(`Media with id ${mediaId} not found.`);
       return;
     }
 
-    await deleteMediaFile({ mediaId, mediaName });
-
-    if (status !== MEDIA_STATUS.PROCESSING) {
-      const keyPrefix = status === MEDIA_STATUS.ERROR ? 'uploads' : 'resized';
-      await deleteMediaFile({
-        mediaId,
-        mediaName,
-        keyPrefix,
-      });
-    }
+    // Delete all corresponding media files from S3
+    await deleteMediaFolder({ mediaId });
 
     logger.info(`Deleted media with id ${mediaId}.`);
     span.setStatus({ code: opentelemetry.SpanStatusCode.OK });
-    successesCounter.add(1, {
-      scope: metricScope,
-    });
+    successesCounter.add(1, { scope: metricScope });
   } catch (error) {
     logger.error(`Error while deleting media with id ${mediaId}.`, error);
-
     span.setStatus({ code: opentelemetry.SpanStatusCode.ERROR });
     span.end();
-    failuresCounter.add(1, {
-      scope: metricScope,
-    });
-
+    failuresCounter.add(1, { scope: metricScope });
     throw error;
   } finally {
     logger.info('Flushing OpenTelemetry signals');

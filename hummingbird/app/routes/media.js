@@ -13,7 +13,7 @@ const setMediaStyle = require('../middlewares/setMediaStyle.js');
 const router = express.Router();
 
 // Upload a new PDF
-router.post('/', validateStyle, setMediaStyle, uploadController);
+router.post('/', uploadController);
 
 // Get media status
 router.get('/:id/status', statusController);

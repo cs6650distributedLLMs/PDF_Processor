@@ -13,10 +13,11 @@ module.exports = {
       topicArn: process.env.MEDIA_MANAGEMENT_TOPIC_ARN,
       type: 'media.v1.delete',
     },
-    SUMMARIZE_MEDIA: {
-      topicArn: process.env.MEDIA_MANAGEMENT_TOPIC_ARN,
-      type: 'media.v1.summarize',
-    },
+    // The lambda function will be triggered automatically
+    // EXTRACT_TEXT: {
+    //   topicArn: process.env.MEDIA_MANAGEMENT_TOPIC_ARN,
+    //   type: 'media.v1.extract.text',
+    // },
     SUMMARIZE_TEXT: {
       topicArn: process.env.MEDIA_MANAGEMENT_TOPIC_ARN,
       type: 'media.v1.summarize.text',
@@ -26,12 +27,19 @@ module.exports = {
   MEDIA_STATUS: {
     PENDING: 'PENDING',
     PROCESSING: 'PROCESSING',
-    COMPLETE: 'COMPLETE',
+    EXTRACTED: 'EXTRACTED',
+    SUMMARIZED: 'SUMMARIZED',
     ERROR: 'ERROR',
   },
 
   SUMMARY_STYLE: {
     DEFAULT_STYLE: 'concise',
     VALID_STYLES: ['concise', 'detailed', 'bullet-points'],
+  },
+
+  BUCKETS: {
+    UPLOADS: 'uploads',
+    EXTRACTS: 'extracts',
+    SUMMARIES: 'summaries',
   },
 };

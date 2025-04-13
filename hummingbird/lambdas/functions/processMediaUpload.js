@@ -1,15 +1,11 @@
-const sharp = require('sharp');
 const { ConditionalCheckFailedException } = require('@aws-sdk/client-dynamodb');
 const opentelemetry = require('@opentelemetry/api');
 const { getMediaId, withLogging } = require('../common.js');
-const {
-  setMediaStatus,
-  setMediaStatusConditionally,
-} = require('../clients/dynamodb.js');
-const { getMediaFile, uploadMediaToStorage } = require('../clients/s3.js');
-const { MEDIA_STATUS } = require('../constants.js');
+const { setMediaStatus } = require('../clients/dynamodb.js');
+const { MEDIA_STATUS } = require('../core/constants.js');
 const { init: initializeLogger, getLogger } = require('../logger.js');
 const { successesCounter, failuresCounter } = require('../observability.js');
+const extractPdfHandler = require('../eventHandlers/extractPdfHandler.js');
 
 initializeLogger({ service: process.env.AWS_LAMBDA_FUNCTION_NAME });
 const logger = getLogger();
@@ -37,19 +33,10 @@ const getHandler = () => {
 
     await tracer.startActiveSpan('process-media-upload', async (span) => {
       try {
-        logger.info(`Processing media ${mediaId}.`);
-
+        logger.info(`Extracting text from PDF with id ${mediaId}.`);
         span.setAttribute('media.id', mediaId);
-
-        // await setMediaStatusConditionally({
-        //   mediaId,
-        //   newStatus: MEDIA_STATUS.PROCESSING,
-        //   expectedCurrentStatus: MEDIA_STATUS.PENDING,
-        // });
-
-        successesCounter.add(1, {
-          scope: metricScope,
-        });
+        await extractPdfHandler({ mediaId, span });
+        successesCounter.add(1, { scope: metricScope });
         span.setStatus({ code: opentelemetry.SpanStatusCode.OK });
         span.end();
       } catch (error) {
@@ -59,7 +46,6 @@ const getHandler = () => {
           logger.error(
             `Media ${mediaId} not found or status is not ${MEDIA_STATUS.PROCESSING}.`
           );
-
           span.end();
           failuresCounter.add(1, {
             scope: metricScope,
@@ -69,18 +55,10 @@ const getHandler = () => {
           throw error;
         }
 
-        await setMediaStatus({
-          mediaId,
-          newStatus: MEDIA_STATUS.ERROR,
-        });
-
+        await setMediaStatus({ mediaId, newStatus: MEDIA_STATUS.ERROR });
         logger.error(`Failed to process media ${mediaId}`, error);
-
         span.end();
-        failuresCounter.add(1, {
-          scope: metricScope,
-        });
-
+        failuresCounter.add(1, { scope: metricScope });
         throw error;
       } finally {
         logger.info('Flushing OpenTelemetry signals');

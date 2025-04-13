@@ -21,7 +21,6 @@ module.exports = {
     '@opentelemetry/exporter-logs-otlp-http',
     '@opentelemetry/winston-transport',
     '@opentelemetry/resources',
-    'sharp',
   ],
   onwarn(warning, warn) {
     if (warning.code === 'THIS_IS_UNDEFINED') return;

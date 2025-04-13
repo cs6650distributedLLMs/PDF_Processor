@@ -55,10 +55,12 @@ const setMediaStatusConditionally = async ({
 
     return {
       name: Attributes.name.S,
-      style: Attributes.style.N,
     };
   } catch (error) {
-    logger.error('Error setting media status conditionally', error);
+    logger.error(
+      `Error setting media status conditionally for ${mediaId}: expected ${expectedCurrentStatus}, new ${newStatus}`,
+      error
+    );
     throw error;
   }
 };

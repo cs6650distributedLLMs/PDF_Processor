@@ -53,25 +53,6 @@ const publishDeleteMediaEvent = async (mediaId) => {
 };
 
 /**
- * Publishes an extract PDF event to the media management topic
- * @param {object} param0 Function parameters
- * @param {string} param0.mediaId The ID of the media to summarize
- * @param {string} param0.style The style to use for the PDF summary
- * @returns {Promise<void>}
- */
-const publishSummarizeMediaEvent = async ({ mediaId, style }) => {
-  const message = {
-    type: EVENTS.SUMMARIZE_MEDIA.type,
-    payload: { mediaId, style },
-  };
-
-  await publishEvent({
-    topicArn: EVENTS.SUMMARIZE_MEDIA.topicArn,
-    message,
-  });
-};
-
-/**
  * Publishes a summarize text event to the media management topic
  * @param {object} param0 Function parameters
  * @param {string} param0.mediaId The ID of the media to summarize
@@ -94,6 +75,5 @@ const publishSummarizeTextEvent = async ({ mediaId, mediaName, style }) => {
 module.exports = {
   publishEvent,
   publishDeleteMediaEvent,
-  publishSummarizeMediaEvent,
   publishSummarizeTextEvent,
 };

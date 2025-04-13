@@ -5,8 +5,9 @@ const {
 } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const { isLocalEnv } = require('../core/utils.js');
+const { isLocalEnv, getBaseName } = require('../core/utils.js');
 const { getLogger } = require('../logger.js');
+const { BUCKETS } = require('../core/constants.js');
 
 const logger = getLogger();
 
@@ -27,7 +28,7 @@ const uploadMediaToStorage = ({
   mediaId,
   mediaName,
   body,
-  keyPrefix = 'uploads',
+  keyPrefix = BUCKETS.UPLOADS,
 }) => {
   try {
     const upload = new Upload({
@@ -63,9 +64,12 @@ const getProcessedMediaUrl = async ({ mediaId, mediaName }) => {
       region: process.env.AWS_REGION,
     });
 
+    const basename = getBaseName(mediaName);
+    const summaryName = `${basename}.summary.txt`;
+
     const command = new GetObjectCommand({
       Bucket: process.env.MEDIA_BUCKET_NAME,
-      Key: `resized/${mediaId}/${mediaName}`,
+      Key: `${BUCKETS.SUMMARIES}/${mediaId}/${summaryName}`,
     });
 
     const ONE_HOUR_IN_SECONDS = 3600;
@@ -96,7 +100,7 @@ const getMediaFile = async ({ mediaId, mediaName }) => {
 
     const command = new GetObjectCommand({
       Bucket: process.env.MEDIA_BUCKET_NAME,
-      Key: `uploads/${mediaId}/${mediaName}`,
+      Key: `${BUCKETS.UPLOADS}/${mediaId}/${mediaName}`,
     });
 
     const response = await client.send(command);
@@ -118,7 +122,7 @@ const getMediaFile = async ({ mediaId, mediaName }) => {
 const deleteMediaFile = async ({
   mediaId,
   mediaName,
-  keyPrefix = 'uploads',
+  keyPrefix = BUCKETS.UPLOADS,
 }) => {
   try {
     const client = new S3Client({
