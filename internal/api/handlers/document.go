@@ -74,11 +74,11 @@ func UploadController(c *gin.Context) {
 	// Update the document status based on the extractor response
 	var status core.DocumentStatus
 	switch resp.Status {
-	case core.ExternalStatusOK, core.ExternalStatusProcessing:
+	case "PROCESSING":
 		status = core.DocumentStatusProcessing
-	case core.ExternalStatusComplete:
+	case "COMPLETE":
 		status = core.DocumentStatusExtracted
-	case core.ExternalStatusError:
+	case "ERROR":
 		status = core.DocumentStatusError
 	default:
 		status = core.DocumentStatusProcessing
@@ -118,13 +118,13 @@ func GetExtractedTextController(c *gin.Context) {
 	}
 
 	// If status is not complete, return the current status
-	if extractResp.Status != core.ExternalStatusComplete {
+	if extractResp.Status != "COMPLETE" {
 		// Update our internal status
 		var status core.DocumentStatus
 		switch extractResp.Status {
-		case core.ExternalStatusOK, core.ExternalStatusProcessing:
+		case "PROCESSING":
 			status = core.DocumentStatusProcessing
-		case core.ExternalStatusError:
+		case "ERROR":
 			status = core.DocumentStatusError
 		default:
 			status = core.DocumentStatusProcessing
@@ -151,7 +151,7 @@ func GetExtractedTextController(c *gin.Context) {
 	// Return the extracted text
 	c.JSON(http.StatusOK, gin.H{
 		"documentId": documentID,
-		"text":       extractResp.Result,
+		"text":       extractResp.Text,
 	})
 }
 
@@ -178,10 +178,10 @@ func StatusController(c *gin.Context) {
 		if err == nil {
 			// Update status based on extractor response
 			switch extractResp.Status {
-			case core.ExternalStatusComplete:
+			case "COMPLETE":
 				document.Status = core.DocumentStatusExtracted
 				_ = clients.SetDocumentStatus(c.Request.Context(), documentID, core.DocumentStatusExtracted)
-			case core.ExternalStatusError:
+			case "ERROR":
 				document.Status = core.DocumentStatusError
 				_ = clients.SetDocumentStatus(c.Request.Context(), documentID, core.DocumentStatusError)
 			}
@@ -274,13 +274,13 @@ func SummarizeController(c *gin.Context) {
 	}
 
 	// If extractor says it's not complete, update our status and return
-	if extractStatus.Status != core.ExternalStatusComplete {
+	if extractStatus.Status != "COMPLETE" {
 		// Update status based on extractor response
 		var status core.DocumentStatus
 		switch extractStatus.Status {
-		case core.ExternalStatusOK, core.ExternalStatusProcessing:
+		case "PROCESSING":
 			status = core.DocumentStatusProcessing
-		case core.ExternalStatusError:
+		case "ERROR":
 			status = core.DocumentStatusError
 		default:
 			status = core.DocumentStatusProcessing
@@ -306,7 +306,7 @@ func SummarizeController(c *gin.Context) {
 
 	// Send the extracted text to the summarizer service
 	summarizerClient := clients.NewSummarizerClient()
-	summaryResp, err := summarizerClient.SummarizeText(c.Request.Context(), documentID, extractStatus.Result)
+	summaryResp, err := summarizerClient.SummarizeText(c.Request.Context(), documentID, extractStatus.Text)
 	if err != nil {
 		core.SendErrorResponse(c, err)
 		return

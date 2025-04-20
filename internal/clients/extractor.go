@@ -3,10 +3,10 @@ package clients
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"time"
@@ -28,88 +28,47 @@ func NewExtractorClient() *ExtractorClient {
 	}
 }
 
-// ExtractRequest represents a request to extract text from a PDF
-type ExtractRequest struct {
-	DocumentID string `json:"documentId"`
-	Base64     string `json:"base64"`
-}
-
 // ExtractResponse represents a response from the PDF extractor service
 type ExtractResponse struct {
 	Status string `json:"status"`
-	Result string `json:"result,omitempty"`
+	Text   string `json:"text,omitempty"`
 }
 
 // ExtractText sends a request to extract text from a PDF
 func (c *ExtractorClient) ExtractText(ctx context.Context, documentID string, pdfData []byte) (*ExtractResponse, error) {
-	// Create the request to the PDF extractor service
-	url := c.BaseURL
+	// Create a new buffer for the multipart form
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
 
-	// Convert PDF data to base64
-	base64Data := base64.StdEncoding.EncodeToString(pdfData)
-
-	// Prepare the request payload
-	reqBody, err := json.Marshal(ExtractRequest{
-		DocumentID: documentID,
-		Base64:     base64Data,
-	})
+	// Add the document_id field
+	err := writer.WriteField("document_id", documentID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return nil, fmt.Errorf("failed to add document_id to form: %w", err)
 	}
 
-	// Create a new HTTP request
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(reqBody))
+	// Add the file field
+	fileWriter, err := writer.CreateFormFile("file", "document.pdf")
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create form file: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the request
-	resp, err := c.HTTPClient.Do(req)
+	_, err = fileWriter.Write(pdfData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
+		return nil, fmt.Errorf("failed to write file data: %w", err)
 	}
-	defer resp.Body.Close()
 
-	// Read the response body
-	respBody, err := io.ReadAll(resp.Body)
+	// Close the writer
+	err = writer.Close()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to close multipart writer: %w", err)
 	}
 
-	// Check for error status code
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		return nil, fmt.Errorf("extractor service returned status %d: %s", resp.StatusCode, respBody)
-	}
-
-	// Parse the response
-	var extractResp ExtractResponse
-	if err := json.Unmarshal(respBody, &extractResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return &extractResp, nil
-}
-
-// GetExtractStatus polls the Extract endpoint to check the status
-func (c *ExtractorClient) GetExtractStatus(ctx context.Context, documentID string) (*ExtractResponse, error) {
-	// For the new API, we need to call the Extract endpoint with just the documentId
-	url := c.BaseURL
-
-	// Prepare an empty request with just the documentId (no base64 data)
-	reqBody, err := json.Marshal(map[string]string{
-		"documentId": documentID,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	// Create a new HTTP request
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(reqBody))
+	// Create a new HTTP request to the extract endpoint
+	url := fmt.Sprintf("%s/extract", c.BaseURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, &buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	// Send the request
 	resp, err := c.HTTPClient.Do(req)
@@ -135,5 +94,110 @@ func (c *ExtractorClient) GetExtractStatus(ctx context.Context, documentID strin
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
+	// Convert 'ok' response to 'processing' for consistency with our system
+	if extractResp.Status == "ok" {
+		extractResp.Status = "PROCESSING"
+	}
+
 	return &extractResp, nil
+}
+
+// GetExtractStatus checks the status of a document extraction
+func (c *ExtractorClient) GetExtractStatus(ctx context.Context, documentID string) (*ExtractResponse, error) {
+	// Create a new HTTP request to the check-status endpoint
+	url := fmt.Sprintf("%s/check-status/%s", c.BaseURL, documentID)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Send the request
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check for error status code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("extractor service returned status %d: %s", resp.StatusCode, respBody)
+	}
+
+	// Parse the response
+	var statusResp struct {
+		Status string `json:"status"`
+	}
+	if err := json.Unmarshal(respBody, &statusResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	// If the status is "completed", get the result
+	if statusResp.Status == "completed" {
+		return c.GetExtractResult(ctx, documentID)
+	}
+
+	// Map the status to our internal status
+	extractResp := &ExtractResponse{}
+	switch statusResp.Status {
+	case "processing":
+		extractResp.Status = "PROCESSING"
+	case "error":
+		extractResp.Status = "ERROR"
+	default:
+		extractResp.Status = statusResp.Status
+	}
+
+	return extractResp, nil
+}
+
+// GetExtractResult retrieves the extraction result
+func (c *ExtractorClient) GetExtractResult(ctx context.Context, documentID string) (*ExtractResponse, error) {
+	// Create a new HTTP request to the result endpoint
+	url := fmt.Sprintf("%s/result/%s", c.BaseURL, documentID)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Send the request
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check for error status code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("extractor service returned status %d: %s", resp.StatusCode, respBody)
+	}
+
+	// Parse the response
+	var resultResp struct {
+		DocumentID string `json:"document_id"`
+		Text       string `json:"text"`
+		Status     string `json:"status"`
+	}
+	if err := json.Unmarshal(respBody, &resultResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	// Map to our internal format
+	extractResp := &ExtractResponse{
+		Status: "COMPLETE",
+		Text:   resultResp.Text,
+	}
+
+	return extractResp, nil
 }
