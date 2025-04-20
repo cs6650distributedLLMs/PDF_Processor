@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -159,8 +160,7 @@ func GetExtractedTextController(c *gin.Context) {
 func StatusController(c *gin.Context) {
 	documentID := c.Param("id")
 
-	// Get the document from DynamoDB
-	document, err := clients.GetDocument(c.Request.Context(), documentID)
+	document, err := UpdateDocumentStatus(c.Request.Context(), documentID)
 	if err != nil {
 		core.SendErrorResponse(c, err)
 		return
@@ -169,31 +169,6 @@ func StatusController(c *gin.Context) {
 	if document == nil {
 		core.SendNotFoundResponse(c)
 		return
-	}
-
-	// Check if we're waiting for extraction
-	if document.Status == core.DocumentStatusPending || document.Status == core.DocumentStatusProcessing {
-		extractorClient := clients.NewExtractorClient()
-		extractResp, err := extractorClient.GetExtractStatus(c.Request.Context(), documentID)
-		if err == nil {
-			// Update status based on extractor response
-			switch extractResp.Status {
-			case "COMPLETE":
-				document.Status = core.DocumentStatusExtracted
-				_ = clients.SetDocumentStatus(c.Request.Context(), documentID, core.DocumentStatusExtracted)
-			case "ERROR":
-				document.Status = core.DocumentStatusError
-				_ = clients.SetDocumentStatus(c.Request.Context(), documentID, core.DocumentStatusError)
-			}
-		}
-	} else if document.Status == core.DocumentStatusExtracted {
-		// Check if there's a pending summarization
-		summarizerClient := clients.NewSummarizerClient()
-		summaryResp, err := summarizerClient.GetSummaryStatus(c.Request.Context(), documentID)
-		if err == nil && summaryResp.Status == core.ExternalStatusComplete {
-			document.Status = core.DocumentStatusSummarized
-			_ = clients.SetDocumentStatus(c.Request.Context(), documentID, core.DocumentStatusSummarized)
-		}
 	}
 
 	core.SendOkResponse(c, models.DocumentStatus{Status: document.Status})
@@ -219,23 +194,23 @@ func DownloadController(c *gin.Context) {
 	if document.Status != core.DocumentStatusSummarized {
 		summarizerClient := clients.NewSummarizerClient()
 		summaryResp, err := summarizerClient.GetSummaryStatus(c.Request.Context(), documentID)
-		if err != nil || summaryResp.Status != core.ExternalStatusComplete {
+		if err != nil || (summaryResp.Status != "COMPLETE" && summaryResp.Status != "completed") {
 			c.Header("Retry-After", "60")
-			c.Header("Location", fmt.Sprintf("%s/v1/document/%s/status", c.Request.Host, documentID))
+			c.Header("Location", fmt.Sprintf("%s/v1/documents/%s/status", c.Request.Host, documentID))
 			core.SendAcceptedResponse(c, gin.H{"message": "PDF summarization in progress."})
 			return
 		}
 
 		// Update status if complete
-		if summaryResp.Status == core.ExternalStatusComplete {
+		if summaryResp.Status == "COMPLETE" || summaryResp.Status == "completed" {
 			document.Status = core.DocumentStatusSummarized
 			_ = clients.SetDocumentStatus(c.Request.Context(), documentID, core.DocumentStatusSummarized)
 		}
 	}
 
-	// Get the summary from the summarizer service
+	// Get the summary result
 	summarizerClient := clients.NewSummarizerClient()
-	summaryResp, err := summarizerClient.GetSummaryStatus(c.Request.Context(), documentID)
+	summaryText, err := summarizerClient.GetSummaryResult(c.Request.Context(), documentID)
 	if err != nil {
 		core.SendErrorResponse(c, err)
 		return
@@ -246,7 +221,7 @@ func DownloadController(c *gin.Context) {
 	c.Header("Content-Type", "text/plain")
 
 	// Write the summary to the response
-	c.String(http.StatusOK, summaryResp.Result)
+	c.String(http.StatusOK, summaryText)
 }
 
 // SummarizeController summarizes a document
@@ -315,11 +290,11 @@ func SummarizeController(c *gin.Context) {
 	// Update the document status based on summarizer response
 	var status core.DocumentStatus
 	switch summaryResp.Status {
-	case core.ExternalStatusOK, core.ExternalStatusProcessing:
+	case "PROCESSING", "processing":
 		status = core.DocumentStatusProcessing
-	case core.ExternalStatusComplete:
+	case "COMPLETE", "completed":
 		status = core.DocumentStatusSummarized
-	case core.ExternalStatusError:
+	case "ERROR", "error":
 		status = core.DocumentStatusError
 	default:
 		status = core.DocumentStatusProcessing
@@ -337,8 +312,7 @@ func SummarizeController(c *gin.Context) {
 func GetController(c *gin.Context) {
 	documentID := c.Param("id")
 
-	// Get the document from DynamoDB
-	document, err := clients.GetDocument(c.Request.Context(), documentID)
+	document, err := UpdateDocumentStatus(c.Request.Context(), documentID)
 	if err != nil {
 		core.SendErrorResponse(c, err)
 		return
@@ -390,4 +364,44 @@ func ListController(c *gin.Context) {
 	}
 
 	core.SendOkResponse(c, items)
+}
+
+// UpdateDocumentStatus checks the current processing status with external services and updates if needed
+func UpdateDocumentStatus(ctx context.Context, documentID string) (*models.Document, error) {
+	// Get the document from DynamoDB
+	document, err := clients.GetDocument(ctx, documentID)
+	if err != nil {
+		return nil, err
+	}
+
+	if document == nil {
+		return nil, fmt.Errorf("document not found")
+	}
+
+	// Check if we're waiting for extraction
+	if document.Status == core.DocumentStatusPending || document.Status == core.DocumentStatusProcessing {
+		extractorClient := clients.NewExtractorClient()
+		extractResp, err := extractorClient.GetExtractStatus(ctx, documentID)
+		if err == nil {
+			// Update status based on extractor response
+			switch extractResp.Status {
+			case "COMPLETE", "completed":
+				document.Status = core.DocumentStatusExtracted
+				_ = clients.SetDocumentStatus(ctx, documentID, core.DocumentStatusExtracted)
+			case "ERROR", "error":
+				document.Status = core.DocumentStatusError
+				_ = clients.SetDocumentStatus(ctx, documentID, core.DocumentStatusError)
+			}
+		}
+	} else if document.Status == core.DocumentStatusExtracted {
+		// Check if there's a pending summarization
+		summarizerClient := clients.NewSummarizerClient()
+		summaryResp, err := summarizerClient.GetSummaryStatus(ctx, documentID)
+		if err == nil && (summaryResp.Status == "COMPLETE" || summaryResp.Status == "completed") {
+			document.Status = core.DocumentStatusSummarized
+			_ = clients.SetDocumentStatus(ctx, documentID, core.DocumentStatusSummarized)
+		}
+	}
+
+	return document, nil
 }
